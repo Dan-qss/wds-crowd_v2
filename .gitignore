@@ -1,0 +1,50 @@
+# Byte-compiled / optimized / DLL files
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+.env/
+.venv/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Local development settings
+.env
+.env.local
+*.log
+
+# Documentation
+docs/_build/
+
+# mypy
+.mypy_cache/
+
+# pytest
+.pytest_cache/
+
+# Poetry
+poetry.lock
+
+# Models
+*.pt

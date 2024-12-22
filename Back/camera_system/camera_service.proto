@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package camera_service;
+
+service CameraService {
+  rpc GetFrame (FrameRequest) returns (FrameResponse) {}
+  rpc StreamFrames (FrameRequest) returns (stream FrameResponse) {}
+  rpc GetCameraStatus (StatusRequest) returns (StatusResponse) {}
+}
+
+message FrameRequest {
+  string camera_id = 1;
+}
+
+message FrameResponse {
+  bytes frame_data = 1;
+  int32 width = 2;
+  int32 height = 3;
+  string timestamp = 4;
+}
+
+message StatusRequest {
+  string camera_id = 1;
+}
+
+message StatusResponse {
+  bool running = 1;
+  bool connected = 2;
+  int32 queue_size = 3;
+  string name = 4;
+}

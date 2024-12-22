@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crowd Monitoring</title>
+
+    <!--bootstrap CSS-->
+    <link rel="stylesheet" href="../static/css/bootstrap-css/bootstrap.min.css">
+    <!-- ICON-->
+    <link rel="icon" href="../static/img/qss/7.ico" type="image/x-icon">
+    <!--custom CSS-->
+    <link href="../static/css/stylee.css" rel="stylesheet">
+    <link href="../static/css/heatmap.css" rel="stylesheet">
+    <link href="../static/css/charts.css" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+<body>
+
+    <!-- Navabr Start -->
+    <nav class="navbar navbar-expand-lg ">
+       <div class="container-fluid d-flex mb-3">
+        <img src='../static/img/qss/11.png' alt="" class='qssLogo'/> 
+           <p class=" tit ">Crowd Monitoring System</p>
+           <img src='../static/img/qss/.png' alt="" class='qssLogo'/> 
+       </div>
+     </nav>
+    <!-- Navabr End -->
+
+    <!--Body-->
+    <div class="container-fluid">
+        <div class="row">
+
+        <!--face and charts start here-->
+        <div class="col-xl-4 col-lg-4 col-md-12 col-sm-12">
+            <div class="row">
+              <!-- The last face seen start-->
+               <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 last-seen mb-2">
+                        <p class="last-seen-tit pt-1">Black and White List</p>
+                        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 face-data" id="face-panel">
+                        </div> 
+               </div>
+              <!-- The last face seen end -->
+
+              <!-- Charts start -->
+              <div class="row pie-charts g-0"> 
+                <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 piechart-container p-0 mx-2">
+                    <p class="last-seen-tit p-1">Black & White List</p>
+                    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 pie-chart">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                    <p class="last_hour">last Hour</p>
+                </div>
+            
+                <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 piechart-container p-0 mx-2">
+                    <p class="last-seen-tit p-1">Most crowded areas</p>
+                    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 pie-chart">
+                        <canvas id="pieChart2"></canvas>
+                    </div>
+                    <p class="last_hour">last Hour</p>
+                </div>
+            </div>
+
+                <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 line-chart-container mx-2 m-2">
+                    <p class="last-seen-tit p-0 m-0">Line Chart</p>
+                    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 line-chart">
+                         <canvas id="timePercentageChart"></canvas>
+                    </div>
+                    <!-- <p class="last_hour">last Hour</p> -->
+                   
+                </div>
+                <!-- Charts end -->
+
+            </div>
+        </div>
+        <!--face and charts end here-->
+
+        <!--Heatmap and streams start here-->
+        <div class="col-xl-8 col-lg-8 col-md-12 col-sm-12 heatmap ">
+            <!-- Heat Map start-->
+            <div class="row">
+                <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 position-relative mb-2">
+                    <img src="../static/img/cms/map.png" alt="" class="main-img">
+
+                    <!-- CEO -->
+                    <div class="CEO-beta beta"></div>
+                    <div class="ceo-title center-projects">
+                        <p class="projectName">CEO Office </p>
+                    </div>
+
+                    <!-- Meeting room  -->
+                    <div class="meeting_room_beta beta"></div> 
+                    <div class="meeting-title center-projects">
+                        <p class="projectName">Meeting Room </p>
+                    </div>
+                    
+                     <!-- VP's -->
+                     <div class="vp-beta beta"></div>
+                     <div class="vp-title center-projects">
+                         <p class="projectName">VPs' Offices </p>
+                     </div>
+
+                     <!-- reception -->
+                     <div class="reception-beta beta"></div>
+                     <div class="reception-title center-projects">
+                         <p class="projectName">Reception</p>
+                     </div>
+
+                     <!-- Software lab -->
+                     <div class="software-blue"></div> 
+                     <div class="software-green"></div> 
+                     <div class="software_crowd" id="software_crowd"> </div>
+                     <div class="software-title center-projects">
+                         <p class="projectName">Software & AI lab </p>
+                         <p class="rate" id="software-per">0%</p>
+                     </div>
+
+                     <!-- lobby-->
+                     <div class="lobby-blue"></div>
+                     <div class="lobby-green"></div> 
+                     <div class="lobby-crowd" id="lobby-crowd"></div>
+                     <div class="lobby-title center-projects">
+                         <p class="projectName">Marketing & Sales </p>
+                         <p class="rate" id="lobby-per">0%</p>
+                     </div>
+
+                      <!-- Show Room -->
+                      <div class="show_room-blue"></div>
+                      <div class="show_room-green"></div> 
+                      <div class="show_room_crowd" id="show_room_crowd"></div>
+                      <div class="show-room-title center-projects">
+                         <p class="projectName">Showroom </p>
+                         <p class="rate" id="show-room-per">0%</p>
+                     </div>
+                     
+                     <!-- Robotics_lab-->
+                     <div class="Robotics_lab-blue"></div>
+                     <div class="Robotics_lab-green"></div>
+                     <div class="Robotics_lab-crowd" id="Robotics_lab-crowd"></div>
+                     <div class="Robotics_lab-title center-projects">
+                         <p class="projectName">Robotics lab </p>
+                         <p class="rate" id="Robotics_lab-per">0%</p>
+
+                     </div>
+               </div>
+            <!-- Heat Map end-->
+
+            <!--Streams start-->
+            <div class="streams-container mt-3 p-0 m-0">
+                <div class="streams5">
+                    <div class="camera-container ">
+                        <canvas id="camera1"></canvas>
+                        <div class="camera-label">Software</div>
+                    </div>
+                </div>
+                 <div class="streams5">
+                    <div class="camera-container ">
+                        <canvas id="camera2"></canvas>
+                        <canvas id="camera3"></canvas>
+                        <div class="camera-label">Robotics Lab</div>
+                    </div>
+                </div>
+                <div class="streams5">
+                    <div class="camera-container">
+                        <canvas id="camera4"></canvas>
+                        <div class="camera-label">Marketing and Sales</div>
+                    </div>
+                </div>
+                <div class="streams5">
+                    <div class="camera-container">
+                        <canvas id="camera5"></canvas>
+                        <div class="camera-label">Showroom</div>
+                    </div>
+                </div>   
+            </div>
+               
+        </div>
+            <div class="status" id="status">Connecting...</div>
+           
+            <!--Streams end-->
+        </div>
+         
+
+        </div>
+        <!-- Heatmap and streams end here-->    
+    </div>
+
+
+<!--bootstrap JS-->
+<script src="../static/js/bootstrap-js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script type="module" src="../static/js/main.js"></script>
+
+</body>
+</html>
