@@ -3,15 +3,14 @@ export default class ChartManager {
         this.chart = null;
         this.updateInterval = null;
         this.initializeChart();
+        this.initializeHistoricalData(); // New method to load historical data
         this.startAutoUpdate();
         console.log('Line Chart Manager initialized');
     }
 
     generateTimeLabels() {
         const labels = [];
-        // Generate labels including quarter hours
         for (let hour = 8; hour <= 17; hour++) {
-            // Add hour label
             if (hour === 12) {
                 labels.push('12 PM');
             } else if (hour > 12) {
@@ -20,12 +19,145 @@ export default class ChartManager {
                 labels.push(`${hour} AM`);
             }
             
-            // Add three dots for quarter hours
-            if (hour < 17) { // Don't add dots after 5 PM
+            if (hour < 17) {
                 labels.push('•', '•', '•');
             }
         }
         return labels;
+    }
+
+    async initializeHistoricalData() {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+
+        // If current time is before 8 AM, don't fetch historical data
+        if (currentHour < 8) {
+            return;
+        }
+
+        // Initialize arrays for each dataset
+        const softwareData = Array(37).fill(0);
+        const roboticsData = Array(37).fill(0);
+        const showroomData = Array(37).fill(0);
+        const salesData = Array(37).fill(0);
+
+        // Calculate number of 15-minute intervals to fetch
+        const startTime = new Date();
+        startTime.setHours(8, 0, 0, 0); // Set to 8 AM today
+        
+        const endTime = new Date();
+        if (currentHour >= 17) {
+            endTime.setHours(17, 0, 0, 0);
+        }
+
+        // Fetch data for each 15-minute interval
+        let currentSlotStart = new Date(startTime);
+        while (currentSlotStart < endTime) {
+            const slotEnd = new Date(currentSlotStart.getTime() + 15 * 60 * 1000);
+            
+            try {
+                const data = await this.fetchHistoricalData(currentSlotStart, slotEnd);
+                if (data?.chart_data) {
+                    const slotIndex = this.calculateTimeSlotIndex(currentSlotStart);
+                    
+                    const zoneIndices = {
+                        'software_lab': data.chart_data.labels.indexOf('software_lab'),
+                        'robotics_lab': data.chart_data.labels.indexOf('robotics_lab'),
+                        'showroom': data.chart_data.labels.indexOf('showroom'),
+                        'marketing-&-sales': data.chart_data.labels.indexOf('marketing-&-sales')
+                    };
+
+                    // Update data for this time slot
+                    softwareData[slotIndex] = data.chart_data.absolute_values[zoneIndices['software_lab']] || 0;
+                    roboticsData[slotIndex] = data.chart_data.absolute_values[zoneIndices['robotics_lab']] || 0;
+                    showroomData[slotIndex] = data.chart_data.absolute_values[zoneIndices['showroom']] || 0;
+                    salesData[slotIndex] = data.chart_data.absolute_values[zoneIndices['marketing-&-sales']] || 0;
+                }
+            } catch (error) {
+                console.error('Error fetching historical data for slot:', error);
+            }
+
+            // Move to next 15-minute slot
+            currentSlotStart = slotEnd;
+        }
+
+        // Update chart with all historical data
+        this.chart.data.datasets[0].data = softwareData;
+        this.chart.data.datasets[1].data = roboticsData;
+        this.chart.data.datasets[2].data = showroomData;
+        this.chart.data.datasets[3].data = salesData;
+
+        this.chart.update();
+        console.log('Historical data loaded');
+    }
+
+    async fetchHistoricalData(startTime, endTime) {
+        try {
+            const url = `http://127.0.0.1:8050/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching historical data:', error);
+            return null;
+        }
+    }
+
+    calculateTimeSlotIndex(time) {
+        const hour = time.getHours();
+        const minute = time.getMinutes();
+        return ((hour - 8) * 4) + Math.floor(minute / 15);
+    }
+
+    updateChartWithHistoricalData(historicalData) {
+        if (!historicalData.chart_data) return;
+
+        // Initialize arrays with zeros
+        const softwareData = Array(37).fill(0);
+        const roboticsData = Array(37).fill(0);
+        const showroomData = Array(37).fill(0);
+        const salesData = Array(37).fill(0);
+
+        // Update data points based on historical data
+        const zoneIndices = {
+            'software_lab': historicalData.chart_data.labels.indexOf('software_lab'),
+            'robotics_lab': historicalData.chart_data.labels.indexOf('robotics_lab'),
+            'showroom': historicalData.chart_data.labels.indexOf('showroom'),
+            'marketing-&-sales': historicalData.chart_data.labels.indexOf('marketing-&-sales')
+        };
+
+        // Get the values for each zone
+        const values = {
+            software: historicalData.chart_data.absolute_values[zoneIndices['software_lab']] || 0,
+            robotics: historicalData.chart_data.absolute_values[zoneIndices['robotics_lab']] || 0,
+            showroom: historicalData.chart_data.absolute_values[zoneIndices['showroom']] || 0,
+            sales: historicalData.chart_data.absolute_values[zoneIndices['marketing-&-sales']] || 0
+        };
+
+        // Calculate the current time slot index
+        const now = new Date();
+        const currentIndex = this.calculateTimeSlotIndex(now);
+
+        // Fill historical data up to current time
+        for (let i = 0; i <= currentIndex && i < 37; i++) {
+            softwareData[i] = values.software;
+            roboticsData[i] = values.robotics;
+            showroomData[i] = values.showroom;
+            salesData[i] = values.sales;
+        }
+
+        // Update the chart with historical data
+        this.chart.data.datasets[0].data = softwareData;
+        this.chart.data.datasets[1].data = roboticsData;
+        this.chart.data.datasets[2].data = showroomData;
+        this.chart.data.datasets[3].data = salesData;
+
+        this.chart.update();
     }
 
     initializeChart() {
@@ -38,12 +170,11 @@ export default class ChartManager {
                 datasets: [
                     {
                         label: 'Software Lab',
-                        data: Array(37).fill(0), // 9 hours * 4 points + 1 final point = 37 points
+                        data: Array(37).fill(0),
                         borderColor: '#4CAF50',
                         backgroundColor: 'rgba(76, 175, 80, 0.1)',
                         borderWidth: 2,
                         pointRadius: (context) => {
-                            // Show larger points for hour marks, smaller for quarter hours
                             return context.dataIndex % 4 === 0 ? 3 : 1;
                         },
                         pointBackgroundColor: '#4CAF50',
@@ -158,7 +289,6 @@ export default class ChartManager {
                                 size: 10
                             },
                             callback: function(value, index) {
-                                // Only show labels for hour marks (every 4th index)
                                 return index % 4 === 0 ? this.getLabelForValue(value) : '';
                             }
                         },
@@ -176,44 +306,31 @@ export default class ChartManager {
         const currentHour = now.getHours();
         const currentMinute = now.getMinutes();
         
-        // Only update during business hours (8 AM to 5 PM)
         if (currentHour < 8 || currentHour >= 17) {
             console.log('Outside business hours, skipping update');
             return;
         }
 
         const endTime = new Date();
-        const startTime = new Date(endTime - (5 * 60 * 1000)); // 1 minute ago
+        const startTime = new Date(endTime - (15 * 60 * 1000)); // 15 minutes ago
 
         try {
-            const url = `http://127.0.0.1:8050/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
-            
-            const response = await fetch(url);
+            const data = await this.fetchHistoricalData(startTime, endTime);
+            if (data?.chart_data) {
+                const dataIndex = this.calculateTimeSlotIndex(now);
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            
-            if (data.chart_data) {
-                // Calculate the index for the current time
-                const hourIndex = currentHour - 8;
-                const quarterIndex = Math.floor(currentMinute / 15);
-                const dataIndex = hourIndex * 4 + quarterIndex;
-
-                const newValues = {
-                    software: data.chart_data.absolute_values[data.chart_data.labels.indexOf('software_lab')] || 0,
-                    robotics: data.chart_data.absolute_values[data.chart_data.labels.indexOf('robotics_lab')] || 0,
-                    showroom: data.chart_data.absolute_values[data.chart_data.labels.indexOf('showroom')] || 0,
-                    sales: data.chart_data.absolute_values[data.chart_data.labels.indexOf('marketing-&-sales')] || 0
+                const zoneIndices = {
+                    'software_lab': data.chart_data.labels.indexOf('software_lab'),
+                    'robotics_lab': data.chart_data.labels.indexOf('robotics_lab'),
+                    'showroom': data.chart_data.labels.indexOf('showroom'),
+                    'marketing-&-sales': data.chart_data.labels.indexOf('marketing-&-sales')
                 };
 
-                // Update the data at the current quarter-hour position
-                this.chart.data.datasets[0].data[dataIndex] = newValues.software;
-                this.chart.data.datasets[1].data[dataIndex] = newValues.robotics;
-                this.chart.data.datasets[2].data[dataIndex] = newValues.showroom;
-                this.chart.data.datasets[3].data[dataIndex] = newValues.sales;
+                // Update the current time slot with new data
+                this.chart.data.datasets[0].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['software_lab']] || 0;
+                this.chart.data.datasets[1].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['robotics_lab']] || 0;
+                this.chart.data.datasets[2].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['showroom']] || 0;
+                this.chart.data.datasets[3].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['marketing-&-sales']] || 0;
 
                 this.chart.update();
                 console.log(`Chart updated for ${currentHour}:${currentMinute.toString().padStart(2, '0')}`);
@@ -229,11 +346,11 @@ export default class ChartManager {
     }
 
     startAutoUpdate() {
-        console.log('Starting line chart auto-update (1 minute interval)');
+        console.log('Starting line chart auto-update (15 minute interval)');
         this.updateLatestData();
         this.updateInterval = setInterval(() => {
             this.updateLatestData();
-        }, 5 *  60 * 1000);
+        }, 15 * 60 * 1000); // 15 minutes in milliseconds
     }
 
     stopAutoUpdate() {
