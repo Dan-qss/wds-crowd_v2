@@ -3,7 +3,7 @@ export default class ChartManager {
         this.chart = null;
         this.updateInterval = null;
         this.initializeChart();
-        this.initializeHistoricalData(); // New method to load historical data
+        this.initializeHistoricalData();
         this.startAutoUpdate();
         console.log('Line Chart Manager initialized');
     }
@@ -36,11 +36,11 @@ export default class ChartManager {
             return;
         }
 
-        // Initialize arrays for each dataset
-        const softwareData = Array(37).fill(0);
-        const roboticsData = Array(37).fill(0);
-        const showroomData = Array(37).fill(0);
-        const salesData = Array(37).fill(0);
+        // Initialize arrays for each dataset with null values
+        const softwareData = Array(37).fill(null);
+        const roboticsData = Array(37).fill(null);
+        const showroomData = Array(37).fill(null);
+        const salesData = Array(37).fill(null);
 
         // Calculate number of 15-minute intervals to fetch
         const startTime = new Date();
@@ -114,54 +114,12 @@ export default class ChartManager {
         return ((hour - 8) * 4) + Math.floor(minute / 15);
     }
 
-    updateChartWithHistoricalData(historicalData) {
-        if (!historicalData.chart_data) return;
-
-        // Initialize arrays with zeros
-        const softwareData = Array(37).fill(0);
-        const roboticsData = Array(37).fill(0);
-        const showroomData = Array(37).fill(0);
-        const salesData = Array(37).fill(0);
-
-        // Update data points based on historical data
-        const zoneIndices = {
-            'software_lab': historicalData.chart_data.labels.indexOf('software_lab'),
-            'robotics_lab': historicalData.chart_data.labels.indexOf('robotics_lab'),
-            'showroom': historicalData.chart_data.labels.indexOf('showroom'),
-            'marketing-&-sales': historicalData.chart_data.labels.indexOf('marketing-&-sales')
-        };
-
-        // Get the values for each zone
-        const values = {
-            software: historicalData.chart_data.absolute_values[zoneIndices['software_lab']] || 0,
-            robotics: historicalData.chart_data.absolute_values[zoneIndices['robotics_lab']] || 0,
-            showroom: historicalData.chart_data.absolute_values[zoneIndices['showroom']] || 0,
-            sales: historicalData.chart_data.absolute_values[zoneIndices['marketing-&-sales']] || 0
-        };
-
-        // Calculate the current time slot index
-        const now = new Date();
-        const currentIndex = this.calculateTimeSlotIndex(now);
-
-        // Fill historical data up to current time
-        for (let i = 0; i <= currentIndex && i < 37; i++) {
-            softwareData[i] = values.software;
-            roboticsData[i] = values.robotics;
-            showroomData[i] = values.showroom;
-            salesData[i] = values.sales;
-        }
-
-        // Update the chart with historical data
-        this.chart.data.datasets[0].data = softwareData;
-        this.chart.data.datasets[1].data = roboticsData;
-        this.chart.data.datasets[2].data = showroomData;
-        this.chart.data.datasets[3].data = salesData;
-
-        this.chart.update();
-    }
-
     initializeChart() {
         const ctx = document.getElementById('timePercentageChart').getContext('2d');
+        
+        // Calculate current time slot for visibility
+        const now = new Date();
+        const currentSlot = this.calculateTimeSlotIndex(now);
         
         this.chart = new Chart(ctx, {
             type: 'line',
@@ -170,55 +128,63 @@ export default class ChartManager {
                 datasets: [
                     {
                         label: 'Software Lab',
-                        data: Array(37).fill(0),
+                        data: Array(37).fill(null),
                         borderColor: '#4CAF50',
                         backgroundColor: 'rgba(76, 175, 80, 0.1)',
                         borderWidth: 2,
                         pointRadius: (context) => {
-                            return context.dataIndex % 4 === 0 ? 3 : 1;
+                            return context.dataIndex <= currentSlot ? 
+                                (context.dataIndex % 4 === 0 ? 3 : 1) : 0;
                         },
                         pointBackgroundColor: '#4CAF50',
                         fill: false,
-                        tension: 0.4
+                        tension: 0.4,
+                        spanGaps: false
                     },
                     {
                         label: 'Robotics Lab',
-                        data: Array(37).fill(0),
+                        data: Array(37).fill(null),
                         borderColor: '#2196F3',
                         backgroundColor: 'rgba(33, 150, 243, 0.1)',
                         borderWidth: 2,
                         pointRadius: (context) => {
-                            return context.dataIndex % 4 === 0 ? 3 : 1;
+                            return context.dataIndex <= currentSlot ? 
+                                (context.dataIndex % 4 === 0 ? 3 : 1) : 0;
                         },
                         pointBackgroundColor: '#2196F3',
                         fill: false,
-                        tension: 0.4
+                        tension: 0.4,
+                        spanGaps: false
                     },
                     {
                         label: 'Showroom',
-                        data: Array(37).fill(0),
+                        data: Array(37).fill(null),
                         borderColor: '#FFC107',
                         backgroundColor: 'rgba(255, 193, 7, 0.1)',
                         borderWidth: 2,
                         pointRadius: (context) => {
-                            return context.dataIndex % 4 === 0 ? 3 : 1;
+                            return context.dataIndex <= currentSlot ? 
+                                (context.dataIndex % 4 === 0 ? 3 : 1) : 0;
                         },
                         pointBackgroundColor: '#FFC107',
                         fill: false,
-                        tension: 0.4
+                        tension: 0.4,
+                        spanGaps: false
                     },
                     {
                         label: 'Marketing & Sales',
-                        data: Array(37).fill(0),
+                        data: Array(37).fill(null),
                         borderColor: '#9C27B0',
                         backgroundColor: 'rgba(156, 39, 176, 0.1)',
                         borderWidth: 2,
                         pointRadius: (context) => {
-                            return context.dataIndex % 4 === 0 ? 3 : 1;
+                            return context.dataIndex <= currentSlot ? 
+                                (context.dataIndex % 4 === 0 ? 3 : 1) : 0;
                         },
                         pointBackgroundColor: '#9C27B0',
                         fill: false,
-                        tension: 0.4
+                        tension: 0.4,
+                        spanGaps: false
                     }
                 ]
             },
@@ -257,6 +223,7 @@ export default class ChartManager {
                                 return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
                             },
                             label: function(context) {
+                                if (context.parsed.y === null) return null;
                                 return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}%`;
                             }
                         }
@@ -312,7 +279,7 @@ export default class ChartManager {
         }
 
         const endTime = new Date();
-        const startTime = new Date(endTime - (15 * 60 * 1000)); // 15 minutes ago
+        const startTime = new Date(endTime - (15 * 60 * 1000));
 
         try {
             const data = await this.fetchHistoricalData(startTime, endTime);
@@ -325,6 +292,14 @@ export default class ChartManager {
                     'showroom': data.chart_data.labels.indexOf('showroom'),
                     'marketing-&-sales': data.chart_data.labels.indexOf('marketing-&-sales')
                 };
+
+                // Update only up to the current time slot
+                this.chart.data.datasets.forEach((dataset, index) => {
+                    // Fill future slots with null
+                    for (let i = dataIndex + 1; i < dataset.data.length; i++) {
+                        dataset.data[i] = null;
+                    }
+                });
 
                 // Update the current time slot with new data
                 this.chart.data.datasets[0].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['software_lab']] || 0;
