@@ -194,7 +194,6 @@ class CrowdDataFetcher:
             if conn:
                 self.db.return_connection(conn)
 
-
     def get_occupancy_percentages_by_zone(self, start_time: str, end_time: str) -> Dict:
         """
         Calculate occupancy percentages aggregated by zones
@@ -312,7 +311,6 @@ class CrowdDataFetcher:
             if conn:
                 self.db.return_connection(conn)
                 
-            
     def get_latest_by_camera(self, camera_id: int) -> Optional[Dict]:
         """Get the latest measurement for a specific camera"""
         conn = None

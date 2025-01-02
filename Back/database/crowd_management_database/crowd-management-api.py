@@ -156,7 +156,6 @@ async def get_zone_occupancy_percentages(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 async def get_latest_by_camera(camera_id: int):
     """Get latest measurement for a specific camera"""
     data = crowd_fetcher.get_latest_by_camera(camera_id)

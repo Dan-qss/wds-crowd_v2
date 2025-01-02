@@ -5,8 +5,8 @@ export default class PieChartManager {
         
         // Initial test data
         this.updateData({
-            blacklist: 35,
-            whitelist: 65
+            blacklist: 55,
+            whitelist: 45
         });
     }
 
@@ -25,7 +25,6 @@ export default class PieChartManager {
             data: {
                 labels: ['Blacklist', 'Whitelist'],
                 datasets: [{
-                    data: [0, 0],
                     backgroundColor: [
                         'rgba(255, 82, 82, 0.8)',  // Red color for blacklist
                         'rgba(76, 175, 80, 0.8)'   // Green color for whitelist
@@ -105,16 +104,16 @@ export default class PieChartManager {
                 data.blacklist,
                 data.whitelist
             ];
-            this.chart.update('none'); // Update without animation
+            this.chart.update(); // Update without animation
         }
     }
 
-    handleWebSocketData(data) {
-        if (data && data.blacklistPercentage !== undefined && data.whitelistPercentage !== undefined) {
-            this.updateData({
-                blacklist: data.blacklistPercentage,
-                whitelist: data.whitelistPercentage
-            });
-        }
-    }
+    // handleWebSocketData(data) {
+    //     if (data && data.blacklistPercentage !== undefined && data.whitelistPercentage !== undefined) {
+    //         this.updateData({
+    //             blacklist: data.blacklistPercentage,
+    //             whitelist: data.whitelistPercentage
+    //         });
+    //     }
+    // }
 }

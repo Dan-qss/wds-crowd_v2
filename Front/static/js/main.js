@@ -19,9 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
             pieChartManager.handleWebSocketData(data.pieChartData);
         }
 
-        if (data.pieChart2Data) {
-            pieChart2Manager.handleWebSocketData(data.pieChart2Data);
-        }
+        // if (data.pieChart2Data) {
+        //     pieChart2Manager.handleWebSocketData(data.pieChart2Data);
+        // }
     });
 
     // Clean up on page unload
