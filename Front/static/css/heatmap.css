@@ -1,5 +1,5 @@
 .main-img{
-  width: 970px;
+  width: 995px;
   height: 475px;
   margin-top: 0.7rem;
   border-radius: 10px;
@@ -12,7 +12,7 @@
 
   .heatmap{
   
-    width: 993px;
+    width: 999px;
     height: 500px;
     background-color: var(--box-color);
     border-radius: 10px;

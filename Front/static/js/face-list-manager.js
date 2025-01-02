@@ -143,7 +143,7 @@ export default class FaceListManager {
 
         this.employees.forEach(employee => {
             const employeeContainer = document.createElement('div');
-            employeeContainer.className = 'container face-data-container mb-3 py-3';
+            employeeContainer.className = 'container face-data-container mb-2 py-2';
 
             employeeContainer.innerHTML = `
                 <div class="row">
