@@ -195,96 +195,107 @@ class CrowdDataFetcher:
                 self.db.return_connection(conn)
 
     def get_occupancy_percentages_by_zone(self, start_time: str, end_time: str) -> Dict:
-        """
-        Calculate occupancy percentages aggregated by zones
-        
-        Args:
-            start_time (str): Start time in format 'YYYY-MM-DD HH:MM'
-            end_time (str): End time in format 'YYYY-MM-DD HH:MM'
-        
-        Returns:
-            Dict: Summary of occupancy percentages by zone and raw data for charts
-        """
         conn = None
         try:
             conn = self.db.get_connection()
             with conn.cursor() as cur:
-                # First get the detailed data by camera
+                # Modified query to include camera capacities
                 query = """
-                    WITH AverageOccupancy AS (
+                    WITH CameraOccupancy AS (
                         SELECT 
-                            camera_id,
+                            cm.camera_id,
+                            cm.zone_name,
+                            AVG(cm.number_of_people) as avg_people,
+                            cm.capacity,
+                            COUNT(*) as measurement_count,
+                            AVG(cm.crowding_percentage) as individual_percentage
+                        FROM crowd_measurements cm
+                        WHERE cm.measured_at BETWEEN %s::timestamp AND %s::timestamp
+                        GROUP BY cm.camera_id, cm.zone_name, cm.capacity
+                    ),
+                    ZoneTotals AS (
+                        SELECT 
                             zone_name,
-                            AVG(number_of_people) as avg_people,
-                            AVG(crowding_percentage) as avg_percentage,
-                            COUNT(*) as measurement_count
-                        FROM crowd_measurements
-                        WHERE measured_at BETWEEN %s::timestamp AND %s::timestamp
-                        GROUP BY camera_id, zone_name
+                            SUM(avg_people) as zone_total_people,
+                            SUM(capacity) as zone_total_capacity,
+                            (SUM(avg_people) * 100.0 / SUM(capacity)) as zone_percentage
+                        FROM CameraOccupancy
+                        GROUP BY zone_name
                     )
                     SELECT 
-                        camera_id,
-                        zone_name,
-                        avg_people,
-                        avg_percentage,
-                        measurement_count
-                    FROM AverageOccupancy
-                    ORDER BY zone_name, camera_id
+                        co.camera_id,
+                        co.zone_name,
+                        co.avg_people,
+                        co.capacity,
+                        co.individual_percentage,
+                        co.measurement_count,
+                        zt.zone_total_people,
+                        zt.zone_total_capacity,
+                        zt.zone_percentage
+                    FROM CameraOccupancy co
+                    JOIN ZoneTotals zt ON co.zone_name = zt.zone_name
+                    ORDER BY zt.zone_percentage DESC, co.zone_name, co.camera_id
                 """
                 
                 cur.execute(query, (start_time, end_time))
                 rows = cur.fetchall()
                 
-                # Process camera-level data
+                # Process data
                 camera_data = []
                 zone_data = {}
+                total_zone_occupancy = 0  # Sum of all zone percentages
                 
-                total_occupancy = sum(row[3] for row in rows)  # Sum of all camera percentages
-                
-                # First, collect all camera data and start aggregating by zone
+                # First pass: collect zone data
                 for row in rows:
-                    camera_id, zone_name, avg_people, avg_percentage, count = row
+                    (camera_id, zone_name, avg_people, capacity, individual_percentage,
+                    count, zone_total_people, zone_total_capacity, zone_percentage) = row
+                    
+                    if zone_name not in zone_data:
+                        zone_data[zone_name] = {
+                            'total_people': zone_total_people,
+                            'total_capacity': zone_total_capacity,
+                            'zone_percentage': zone_percentage,
+                            'cameras': [],
+                            'measurement_count': 0
+                        }
+                        total_zone_occupancy += zone_percentage
+                    
+                    zone_data[zone_name]['cameras'].append(camera_id)
+                    zone_data[zone_name]['measurement_count'] += count
                     
                     # Store camera-level detail
                     camera_detail = {
                         'camera_id': camera_id,
                         'zone_name': zone_name,
                         'average_people': round(avg_people, 2),
-                        'average_percentage': round(avg_percentage, 2),
-                        'relative_percentage': round((avg_percentage / total_occupancy) * 100, 2),
+                        'capacity': capacity,
+                        'average_percentage': round(individual_percentage, 2),
                         'measurement_count': count
                     }
                     camera_data.append(camera_detail)
-                    
-                    # Aggregate by zone
-                    if zone_name not in zone_data:
-                        zone_data[zone_name] = {
-                            'total_people': 0,
-                            'sum_percentage': 0,
-                            'cameras': [],
-                            'measurement_count': 0
-                        }
-                    
-                    zone_data[zone_name]['total_people'] += avg_people
-                    zone_data[zone_name]['sum_percentage'] += avg_percentage
-                    zone_data[zone_name]['cameras'].append(camera_id)
-                    zone_data[zone_name]['measurement_count'] += count
                 
                 # Calculate final zone-level statistics
                 zone_summary = []
                 for zone_name, data in zone_data.items():
-                    relative_percentage = (data['sum_percentage'] / total_occupancy) * 100
+                    relative_percentage = (data['zone_percentage'] / total_zone_occupancy * 100) if total_zone_occupancy > 0 else 0
                     zone_summary.append({
                         'zone_name': zone_name,
                         'cameras': data['cameras'],
                         'total_people': round(data['total_people'], 2),
-                        'average_percentage': round(data['sum_percentage'], 2),
+                        'total_capacity': data['total_capacity'],
+                        'average_percentage': round(data['zone_percentage'], 2),
                         'relative_percentage': round(relative_percentage, 2),
                         'measurement_count': data['measurement_count']
                     })
                 
-                # Sort zones by relative percentage
-                zone_summary.sort(key=lambda x: x['relative_percentage'], reverse=True)
+                # Update camera relative percentages
+                for camera in camera_data:
+                    zone_percentage = next(z['average_percentage'] for z in zone_summary 
+                                        if z['zone_name'] == camera['zone_name'])
+                    camera['relative_percentage'] = round(
+                        (camera['average_percentage'] / total_zone_occupancy * 100)
+                        if total_zone_occupancy > 0 else 0, 2
+                    )
                 
                 summary = {
                     'time_range': {
@@ -294,7 +305,7 @@ class CrowdDataFetcher:
                     'total_zones': len(zone_summary),
                     'total_cameras': len(camera_data),
                     'zone_data': zone_summary,
-                    'camera_data': camera_data,  
+                    'camera_data': camera_data,
                     'chart_data': {
                         'labels': [item['zone_name'] for item in zone_summary],
                         'values': [item['relative_percentage'] for item in zone_summary],
