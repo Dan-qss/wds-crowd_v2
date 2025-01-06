@@ -15,6 +15,18 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database.camera_system_database.db_connector import DatabaseConnector
 from database.camera_system_database.db_config import DB_CONFIG
 
+# Set up error logging
+log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs')
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+
+error_log_path = os.path.join(log_dir, 'errors.log')
+logging.basicConfig(
+    filename=error_log_path,
+    level=logging.ERROR,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
 class CameraManager:
     def __init__(self):
         self.cameras: Dict[str, dict] = {}
@@ -24,11 +36,6 @@ class CameraManager:
         self.threads: Dict[str, Thread] = {}
         self.locks: Dict[str, Lock] = {}
         
-        # Set up logging
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s'
-        )
         self.logger = logging.getLogger(__name__)
         
         # Initialize database and configurations
@@ -37,7 +44,7 @@ class CameraManager:
         # Get camera configurations first
         self.camera_config = self.db.get_camera_config()
         if not self.camera_config:
-            # self.logger.error("No camera configuration found in database")
+            self.logger.error("No camera configuration found in database")
             raise ValueError("No camera configuration found in database")
             
         self._initialize_cameras()
@@ -45,7 +52,6 @@ class CameraManager:
     def _initialize_cameras(self):
         """Initialize all enabled cameras"""
         enabled_cameras = self.db.get_enabled_cameras()
-        self.logger.info(f"Found {len(enabled_cameras)} enabled cameras")
         
         for camera in enabled_cameras:
             try:
@@ -54,8 +60,6 @@ class CameraManager:
                 # Handle field names from database
                 name = camera.get('name') or camera.get('zone_name', 'Unknown')
                 ip = camera.get('ip') or camera.get('ip_address', '')
-                
-                self.logger.info(f"Initializing camera {camera_id} - {name} ({ip})")
                 
                 client = Client(
                     f"http://{ip}",
@@ -70,7 +74,6 @@ class CameraManager:
                     self.frame_queues[camera_id] = Queue(maxsize=10)
                     self.locks[camera_id] = Lock()
                     self.running[camera_id] = False
-                    self.logger.info(f"Successfully initialized camera {camera_id}")
                 except Exception as e:
                     self.logger.error(f"Failed to connect to camera {camera_id}: {str(e)}")
                     
@@ -79,7 +82,6 @@ class CameraManager:
 
     def _stream_camera(self, camera_id: str):
         """Handle the camera streaming process"""
-        self.logger.info(f"Starting stream for camera {camera_id}")
         retries = 0
         max_retries = self.camera_config.get('max_retries', 3)
         
@@ -89,7 +91,6 @@ class CameraManager:
                 
                 while self.running[camera_id]:
                     try:
-                        self.logger.debug(f"Getting frame from camera {camera_id}")
                         response = client.Streaming.channels[1].picture(method='get', type='opaque_data')
                         frame_data = np.frombuffer(response.content, dtype=np.uint8)
                         frame = cv2.imdecode(frame_data, cv2.IMREAD_COLOR)
@@ -113,7 +114,7 @@ class CameraManager:
                             time.sleep(1/30)  # 30 FPS limit
                             
                     except Exception as e:
-                        self.logger.warning(f"Failed to get frame from camera {camera_id}: {str(e)}")
+                        self.logger.error(f"Failed to get frame from camera {camera_id}: {str(e)}")
                         break
                         
             except Exception as e:
@@ -136,7 +137,6 @@ class CameraManager:
             return False
 
         if self.running.get(camera_id, False):
-            self.logger.warning(f"Camera {camera_id} is already running")
             return True
 
         self.running[camera_id] = True
@@ -144,15 +144,11 @@ class CameraManager:
         thread.daemon = True
         self.threads[camera_id] = thread
         thread.start()
-        
-        self.logger.info(f"Started camera {camera_id} - {self.cameras[camera_id]['name']}")
         return True
 
     def start_all_cameras(self):
-        self.logger.info("Starting all cameras...")
         for camera_id in self.cameras:
             self.start_camera(camera_id)
-        self.logger.info(f"Started {len(self.cameras)} cameras")
 
     def stop_camera(self, camera_id: str):
         if camera_id in self.running:
@@ -160,7 +156,6 @@ class CameraManager:
             if camera_id in self.threads:
                 self.threads[camera_id].join()
                 del self.threads[camera_id]
-            self.logger.info(f"Stopped camera {camera_id}")
 
     def stop_all_cameras(self):
         camera_ids = list(self.running.keys())

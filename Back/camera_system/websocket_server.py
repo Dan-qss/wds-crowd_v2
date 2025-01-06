@@ -8,9 +8,22 @@ from threading import Thread, Lock
 from queue import Queue
 import numpy as np
 import zlib
+import os
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError
 
-logging.basicConfig(level=logging.INFO)
+# Set up error logging
+BACK_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+log_dir = os.path.join(BACK_DIR, 'logs')
+
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+
+error_log_path = os.path.join(log_dir, 'errors.log')
+logging.basicConfig(
+    filename=error_log_path,
+    level=logging.ERROR,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 class WebSocketStreamer:
@@ -26,24 +39,20 @@ class WebSocketStreamer:
         }
         self.running = True
         self.broadcast_task = None
-        self.compression_level = 6  # Adjust compression level (1-9)
-        self.quality = 70  # Reduce JPEG quality for smaller size
+        self.compression_level = 6
+        self.quality = 70
 
     async def register(self, websocket):
-        """Register a new WebSocket connection"""
         with self.connections_lock:
             self.connections.add(websocket)
-            logger.info(f"New connection added. Total connections: {len(self.connections)}")
         
         try:
-            # Send initial configuration and current status
             await websocket.send(json.dumps({
                 'type': 'config',
                 'cameras': self.camera_ids,
                 'initial_status': self.crowding_status
             }))
             
-            # Keep the connection alive with ping/pong
             while self.running:
                 try:
                     message = await websocket.recv()
@@ -52,16 +61,14 @@ class WebSocketStreamer:
                 except (ConnectionClosed, ConnectionClosedError):
                     break
                 except Exception as e:
-                    logger.error(f"Error in connection: {str(e)}")
+                    logger.error(f"Error in websocket connection: {str(e)}")
                     break
                     
         finally:
             with self.connections_lock:
                 self.connections.discard(websocket)
-                logger.info(f"Connection removed. Total connections: {len(self.connections)}")
 
     async def broadcast_frames(self):
-        """Main broadcast loop"""
         while self.running:
             try:
                 for camera_id in self.camera_ids:
@@ -72,19 +79,16 @@ class WebSocketStreamer:
                             continue
 
                         try:
-                            # Resize frame if too large
                             height, width = frame.shape[:2]
-                            if width > 1280:  # Limit max width
+                            if width > 1280:
                                 scale = 1280 / width
                                 frame = cv2.resize(frame, (1280, int(height * scale)))
 
-                            # Encode frame with reduced quality
                             _, buffer = cv2.imencode('.jpg', frame, [
                                 cv2.IMWRITE_JPEG_QUALITY, self.quality
                             ])
                             frame_data = buffer.tobytes()
                             
-                            # Compress the frame data
                             compressed_data = zlib.compress(frame_data, self.compression_level)
                             frame_base64 = base64.b64encode(compressed_data).decode('utf-8')
                             
@@ -96,7 +100,6 @@ class WebSocketStreamer:
                                 'status': self.crowding_status[camera_id]
                             })
 
-                            # Broadcast frame
                             disconnected = set()
                             for websocket in self.connections.copy():
                                 try:
@@ -105,32 +108,28 @@ class WebSocketStreamer:
                                     logger.error(f"Error sending frame: {str(e)}")
                                     disconnected.add(websocket)
                             
-                            # Remove disconnected clients
                             with self.connections_lock:
                                 for websocket in disconnected:
                                     self.connections.discard(websocket)
 
                         except Exception as e:
-                            logger.error(f"Error processing frame: {str(e)}")
+                            logger.error(f"Error processing frame for camera {camera_id}: {str(e)}")
                             continue
 
-                await asyncio.sleep(1/30)  # 30 FPS limit
+                await asyncio.sleep(1/30)
                 
             except Exception as e:
-                logger.error(f"Broadcast error: {str(e)}")
+                logger.error(f"Error in broadcast loop: {str(e)}")
                 await asyncio.sleep(0.1)
 
     def update_frame(self, camera_id, frame, data=None):
-        """Update frame and crowding status for a specific camera"""
         if not self.running:
             return
             
         try:
-            # Update crowding status if provided
             if data is not None:
                 self.crowding_status[camera_id] = data
 
-            # Update frame
             if self.frame_queues[camera_id].full():
                 try:
                     self.frame_queues[camera_id].get_nowait()
@@ -139,10 +138,9 @@ class WebSocketStreamer:
             self.frame_queues[camera_id].put(frame)
             
         except Exception as e:
-            logger.error(f"Error updating frame: {str(e)}")
+            logger.error(f"Error updating frame for camera {camera_id}: {str(e)}")
 
     async def start_server(self):
-        """Start WebSocket server"""
         try:
             self.broadcast_task = asyncio.create_task(self.broadcast_frames())
             
@@ -150,29 +148,32 @@ class WebSocketStreamer:
                 self.register, 
                 "localhost", 
                 8765,
-                ping_interval=None,  # Disable automatic ping
-                ping_timeout=None,   # Disable ping timeout
-                max_size=None,       # No message size limit
-                compression=None,    # Handle compression manually
-                max_queue=32         # Limit message queue
+                ping_interval=None,
+                ping_timeout=None,
+                max_size=None,
+                compression=None,
+                max_queue=32
             ) as server:
-                await asyncio.Future()  # run forever
+                await asyncio.Future()
+        except Exception as e:
+            logger.error(f"Error starting websocket server: {str(e)}")
+            raise
         finally:
             self.running = False
             if self.broadcast_task:
                 self.broadcast_task.cancel()
 
     def run(self):
-        """Run the WebSocket server"""
         try:
             asyncio.run(self.start_server())
         except KeyboardInterrupt:
-            logger.info("Received interrupt signal")
+            pass
+        except Exception as e:
+            logger.error(f"Fatal error in websocket server: {str(e)}")
         finally:
             self.running = False
 
     def stop(self):
-        """Stop the WebSocket server"""
         self.running = False
         if self.broadcast_task:
             self.broadcast_task.cancel()
