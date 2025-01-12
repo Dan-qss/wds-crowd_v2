@@ -96,10 +96,10 @@ python crowd-management-api.py
 crowd_management/
 ├── Back/
 │   ├── camera_system/       # Camera management and video streaming
-│   ├── client/              # Frame processing and AI models
-│   ├── database/            # Data storage and API
-│   ├── logs/                # System logs
-│   └── results/             # Detection results
+│   ├── client/             # Frame processing and AI models
+│   ├── database/           # Data storage and API
+│   ├── logs/              # System logs
+│   └── results/           # Detection results
 ├── Front/
 │   ├── html/              # Web interface
 │   └── static/            # Static assets
@@ -107,16 +107,29 @@ crowd_management/
 
 ## Technical Details
 
-- Frame Processing: 30 FPS with optimized queuing system
-- AI Models (Extensible Architecture):
-  - Model 1: Person Detection (conf: 0.30) - Primary crowd detection
-  - Model 2: Face Recognition (conf: 0.40) - Facial detection and recognition
-  - Additional models can be added to the pipeline as needed
-  
-The system's modular architecture allows for easy integration of new models. Each model can be configured independently with its own confidence threshold and specific detection tasks.
-- Communication: gRPC for video streaming
-- Output Formats: JSON for detections, JPEG for saved frames
+### Core Features
+- Real-time video processing at 30 FPS
+- Multi-camera support with ROI (Region of Interest) configuration
+- Automatic frame resizing and compression for optimal performance
+- WebSocket streaming for real-time web interface updates
 
+### Camera Zones
+- Software Room
+- Robotics Lab
+- Marketing & Sales
+- Showroom
+
+
+### AI Models
+- Model 1: Person Detection (conf: 0.30) - Primary crowd detection
+- Model 2: Face Recognition (conf: 0.40) - Facial detection and recognition
+- Extensible architecture for additional models
+
+### System Architecture
+- gRPC server for high-performance video streaming
+- PostgreSQL databases for data persistence
+- Error logging system for monitoring and debugging
+- Queue-based frame management for optimal resource usage
 
 
 ## Acknowledgments
