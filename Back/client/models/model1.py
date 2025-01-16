@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 class Model1:
     def __init__(self, db_connector):
         try:
-            self.model = YOLO('yolov8n.pt')
+            self.model = YOLO('yolo11l.pt')
             self.db = db_connector
             
             self._init_cache()

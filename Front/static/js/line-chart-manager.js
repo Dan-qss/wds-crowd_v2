@@ -5,7 +5,7 @@ export default class ChartManager {
         this.initializeChart();
         this.initializeHistoricalData();
         this.startAutoUpdate();
-        console.log('Line Chart Manager initialized');
+        // console.log('Line Chart Manager initialized');
     }
 
     generateTimeLabels() {
@@ -321,7 +321,7 @@ export default class ChartManager {
     }
 
     startAutoUpdate() {
-        console.log('Starting line chart auto-update (15 minute interval)');
+        // console.log('Starting line chart auto-update (15 minute interval)');
         this.updateLatestData();
         this.updateInterval = setInterval(() => {
             this.updateLatestData();
