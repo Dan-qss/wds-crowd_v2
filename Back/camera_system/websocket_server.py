@@ -40,7 +40,7 @@ class WebSocketStreamer:
         self.running = True
         self.broadcast_task = None
         self.compression_level = 6
-        self.quality = 85
+        self.quality = 95
 
     async def register(self, websocket):
         with self.connections_lock:

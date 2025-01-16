@@ -97,10 +97,10 @@ class CameraManager:
                         
                         if frame is not None:
                             # # Print original resolution
-                            # height, width = frame.shape[:2]
-                            # print(f"camera_manager - Camera {camera_id} original resolution: {width}x{height}")
+                            height, width = frame.shape[:2]
+                            print(f"Camera {camera_id} original resolution: {width}x{height}")
                             
-                            # resize_scale = self.camera_config.get('resize_scale', 0.75)
+                            # resize_scale = self.camera_config.get('resize_scale', 0.5)
                             # if resize_scale != 1.0:
                             #     new_size = (
                             #         int(width * resize_scale),
@@ -108,7 +108,7 @@ class CameraManager:
                             #     )
                             #     frame = cv2.resize(frame, new_size)
                             #     # Print resized resolution
-                            #     print(f"camera_manager - Camera {camera_id} resized resolution: {new_size[0]}x{new_size[1]}")
+                                # print(f"Camera {camera_id} resized resolution: {new_size[0]}x{new_size[1]}")
 
                             with self.locks[camera_id]:
                                 if self.frame_queues[camera_id].full():

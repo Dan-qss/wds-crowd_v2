@@ -79,22 +79,31 @@ class CameraManager {
             const camera = this.cameras['2']; // Always use camera 2's canvas
             if (!camera) return;
     
-            // Process and store the frame
             const compressedData = atob(data.frame);
             const compressedArray = Uint8Array.from(compressedData, c => c.charCodeAt(0));
             const decompressedArray = pako.inflate(compressedArray);
+            
+            console.log(`Client received compressed data size for camera ${cameraId}: ${compressedData.length} bytes`);
+            console.log(`Client decompressed data size for camera ${cameraId}: ${decompressedArray.length} bytes`);
             
             const blob = new Blob([decompressedArray], { type: 'image/jpeg' });
             const imageUrl = URL.createObjectURL(blob);
             
             const img = new Image();
             img.onload = () => {
+                console.log(`Client decoded image dimensions for camera ${cameraId}: ${img.width}x${img.height}`);
+                
                 // Store the frame in the appropriate camera object
                 this.cameras[cameraId].lastFrame = img;
                 
+                // Get canvas dimensions
+                console.log(`Client canvas dimensions for camera ${cameraId}: ${camera.canvas.width}x${camera.canvas.height}`);
+                
                 // Only update display if this is the currently active camera
                 if (cameraId === this.currentCamera2) {
-                    this.updateCanvas(camera, img); // Pass the image directly
+                    this.updateCanvas(camera, img);
+                    // Log final display dimensions
+                    console.log(`Client final display dimensions for camera ${cameraId}: ${camera.canvas.width}x${camera.canvas.height}`);
                 }
                 URL.revokeObjectURL(imageUrl);
             };
@@ -108,26 +117,41 @@ class CameraManager {
             const compressedArray = Uint8Array.from(compressedData, c => c.charCodeAt(0));
             const decompressedArray = pako.inflate(compressedArray);
             
+            console.log(`Client received compressed data size for camera ${cameraId}: ${compressedData.length} bytes`);
+            console.log(`Client decompressed data size for camera ${cameraId}: ${decompressedArray.length} bytes`);
+            
             const blob = new Blob([decompressedArray], { type: 'image/jpeg' });
             const imageUrl = URL.createObjectURL(blob);
             
             const img = new Image();
             img.onload = () => {
+                console.log(`Client decoded image dimensions for camera ${cameraId}: ${img.width}x${img.height}`);
                 camera.lastFrame = img;
+                
+                // Get canvas dimensions before update
+                console.log(`Client canvas dimensions before update for camera ${cameraId}: ${camera.canvas.width}x${camera.canvas.height}`);
+                
                 this.updateCanvas(camera, img);
+                
+                // Log final display dimensions
+                console.log(`Client final display dimensions for camera ${cameraId}: ${camera.canvas.width}x${camera.canvas.height}`);
                 URL.revokeObjectURL(imageUrl);
             };
             img.src = imageUrl;
         }
     }
-    
     // Modified updateCanvas to accept an image parameter
     updateCanvas(camera, img) {
+        // Set minimum dimensions for better visibility
+        const minWidth = 640;  // Set minimum width
+        const minHeight = 360; // Set minimum height
+        
+        // Calculate scaling while maintaining aspect ratio
         const containerAspect = camera.canvas.clientWidth / camera.canvas.clientHeight;
         const imageAspect = img.width / img.height;
         
-        let drawWidth = camera.canvas.clientWidth;
-        let drawHeight = camera.canvas.clientHeight;
+        let drawWidth = Math.max(camera.canvas.clientWidth, minWidth);
+        let drawHeight = Math.max(camera.canvas.clientHeight, minHeight);
         
         if (containerAspect > imageAspect) {
             drawWidth = drawHeight * imageAspect;

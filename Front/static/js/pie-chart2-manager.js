@@ -4,7 +4,7 @@ export default class PieChart2Manager {
         this.updateInterval = null;
         this.initializeChart();
         this.startAutoUpdate();
-        console.log('PieChart2Manager initialized');
+        // console.log('PieChart2Manager initialized');
     }
 
     initializeChart() {

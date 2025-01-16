@@ -42,7 +42,7 @@ class CameraServicer(camera_service_pb2_grpc.CameraServiceServicer):
             try:
                 frame = self.camera_manager.get_frame(request.camera_id)
                 if frame is not None:
-                    _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
+                    _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 95])
                     height, width = frame.shape[:2]
                     frames_sent += 1
                     
@@ -57,6 +57,7 @@ class CameraServicer(camera_service_pb2_grpc.CameraServiceServicer):
                         height=height,
                         timestamp=datetime.now().isoformat()
                     )
+                    
                 time.sleep(1/30)
             except Exception as e:
                 logger.error(f"Error streaming camera {request.camera_id}: {e}")

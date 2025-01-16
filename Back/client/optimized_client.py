@@ -120,7 +120,7 @@ class OptimizedCameraClient:
                         frame, timestamp = self.camera_queues[camera_id].get_nowait()
                         frame_counters[camera_id] += 1
                         
-                        frame = cv2.resize(frame, (640, 384))
+                        # frame = cv2.resize(frame, (640, 384))
                         
                         processed_frame, data = self.model.process(
                             frame, 
