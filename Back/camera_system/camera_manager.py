@@ -94,7 +94,7 @@ class CameraManager:
                         response = client.Streaming.channels[1].picture(method='get', type='opaque_data')
                         frame_data = np.frombuffer(response.content, dtype=np.uint8)
                         frame = cv2.imdecode(frame_data, cv2.IMREAD_COLOR)
-                        
+                        #
                         if frame is not None:
                             # # Print original resolution
                             # height, width = frame.shape[:2]
