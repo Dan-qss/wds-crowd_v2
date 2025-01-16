@@ -1,3 +1,4 @@
+# Back/client/optimized_client.py
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), "../camera_system"))
@@ -45,7 +46,7 @@ class OptimizedCameraClient:
         try:
             self.camera_ids = camera_ids
             self.channel = grpc.insecure_channel(
-                'localhost:50051',
+                '192.168.100.65:50051',
                 options=[
                     ('grpc.max_send_message_length', 100 * 1024 * 1024),
                     ('grpc.max_receive_message_length', 100 * 1024 * 1024),
