@@ -1,4 +1,3 @@
-# Back/camera_system/camera_server.py
 import grpc
 from concurrent import futures
 import camera_service_pb2
