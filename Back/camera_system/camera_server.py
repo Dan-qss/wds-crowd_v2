@@ -42,9 +42,14 @@ class CameraServicer(camera_service_pb2_grpc.CameraServiceServicer):
             try:
                 frame = self.camera_manager.get_frame(request.camera_id)
                 if frame is not None:
-                    _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                    _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
                     height, width = frame.shape[:2]
                     frames_sent += 1
+                    
+                    # Print resolution information
+                    print(f"Server streaming frame {frames_sent} from camera {request.camera_id}")
+                    print(f"Frame resolution: {width}x{height}")
+                    print(f"Compressed buffer size: {len(buffer)} bytes")
                     
                     yield camera_service_pb2.FrameResponse(
                         frame_data=buffer.tobytes(),

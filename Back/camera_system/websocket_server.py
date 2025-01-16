@@ -40,7 +40,7 @@ class WebSocketStreamer:
         self.running = True
         self.broadcast_task = None
         self.compression_level = 6
-        self.quality = 70
+        self.quality = 85
 
     async def register(self, websocket):
         with self.connections_lock:
@@ -79,17 +79,30 @@ class WebSocketStreamer:
                             continue
 
                         try:
+                            # Print original resolution
                             height, width = frame.shape[:2]
+                            print(f"WebSocket Server - Camera {camera_id} original resolution: {width}x{height}")
+
+                            # Resize if width is too large
                             if width > 1280:
                                 scale = 1280 / width
                                 frame = cv2.resize(frame, (1280, int(height * scale)))
+                                # Print resized resolution
+                                new_height, new_width = frame.shape[:2]
+                                print(f"WebSocket Server - Camera {camera_id} resized resolution: {new_width}x{new_height}")
 
                             _, buffer = cv2.imencode('.jpg', frame, [
                                 cv2.IMWRITE_JPEG_QUALITY, self.quality
                             ])
                             frame_data = buffer.tobytes()
                             
+                            # Print compressed size
+                            print(f"WebSocket Server - Camera {camera_id} compressed size: {len(frame_data)} bytes")
+                            
                             compressed_data = zlib.compress(frame_data, self.compression_level)
+                            # Print final compressed size after zlib
+                            print(f"WebSocket Server - Camera {camera_id} final compressed size: {len(compressed_data)} bytes")
+                            
                             frame_base64 = base64.b64encode(compressed_data).decode('utf-8')
                             
                             message = json.dumps({
@@ -97,7 +110,11 @@ class WebSocketStreamer:
                                 'camera_id': camera_id,
                                 'frame': frame_base64,
                                 'compressed': True,
-                                'status': self.crowding_status[camera_id]
+                                'status': self.crowding_status[camera_id],
+                                'resolution': {
+                                    'width': new_width if width > 1280 else width,
+                                    'height': new_height if width > 1280 else height
+                                }
                             })
 
                             disconnected = set()
