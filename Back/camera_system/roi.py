@@ -85,7 +85,5 @@ load_rois()
 set_roi("1", [[330, 0], [1040, 0], [1040, 712], [230, 712]]) # Set the ROI for software
 set_roi("2", [[450, 100], [1040, 0], [1040, 712], [100, 712]]) # Set the ROI for lab 1 
 set_roi("3", [[240, 0], [650, 0], [1110, 712], [240, 712]]) # Set the ROI for lab 2
-set_roi("4", [[400, 100], [1040, 0], [1040, 712], [80, 712]]) # Set the ROI for marketing-&-Sales
-
-
+set_roi("4", [[400, 100], [1040, 0], [1040, 712], [80, 712]]) # Set the ROI for showroom
 set_roi("5", [[550, 120], [750, 120], [1040, 712], [280, 712]]) # Set the ROI for marketing-&-Sales
