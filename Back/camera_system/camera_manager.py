@@ -98,7 +98,7 @@ class CameraManager:
                         if frame is not None:
                             # # Print original resolution
                             height, width = frame.shape[:2]
-                            print(f"Camera {camera_id} original resolution: {width}x{height}")
+                            # print(f"Camera {camera_id} original resolution: {width}x{height}")
                             
                             # resize_scale = self.camera_config.get('resize_scale', 0.5)
                             # if resize_scale != 1.0:

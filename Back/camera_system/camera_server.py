@@ -47,9 +47,9 @@ class CameraServicer(camera_service_pb2_grpc.CameraServiceServicer):
                     frames_sent += 1
                     
                     # Print resolution information
-                    print(f"Server streaming frame {frames_sent} from camera {request.camera_id}")
-                    print(f"Frame resolution: {width}x{height}")
-                    print(f"Compressed buffer size: {len(buffer)} bytes")
+                    # print(f"Server streaming frame {frames_sent} from camera {request.camera_id}")
+                    # print(f"Frame resolution: {width}x{height}")
+                    # print(f"Compressed buffer size: {len(buffer)} bytes")
                     
                     yield camera_service_pb2.FrameResponse(
                         frame_data=buffer.tobytes(),

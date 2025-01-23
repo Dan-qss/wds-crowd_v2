@@ -40,13 +40,14 @@ logger = logging.getLogger(__name__)
 
 # Import the model classes from separate files
 from models.model1 import Model1
+from models.model2 import Model2
 
 class OptimizedCameraClient:
     def __init__(self, camera_ids=["1", "2", "3", "4", "5"]):
         try:
             self.camera_ids = camera_ids
             self.channel = grpc.insecure_channel(
-                '192.168.100.65:50051',
+                '127.0.0.1:50051',
                 options=[
                     ('grpc.max_send_message_length', 100 * 1024 * 1024),
                     ('grpc.max_receive_message_length', 100 * 1024 * 1024),
@@ -77,6 +78,7 @@ class OptimizedCameraClient:
             
             # Initialize Model1 with database configuration
             self.model = Model1(self.db)
+            self.model2 = Model2()
             
             self.running = True
             self.threads = []
@@ -121,12 +123,17 @@ class OptimizedCameraClient:
                         frame_counters[camera_id] += 1
                         
                         # frame = cv2.resize(frame, (640, 384))
-                        
+                        # timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+
                         processed_frame, data = self.model.process(
                             frame, 
                             camera_id, 
                             self.camera_capacities[camera_id]
                         )
+                        
+                        # Process with other models
+                        self.model2.process(frame, camera_id)
+
                         
                         camera_info = next(
                             (cam for cam in self.db.get_enabled_cameras() 

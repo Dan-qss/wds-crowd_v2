@@ -1,48 +1,47 @@
 import torch
 import logging
+import base64
+import requests
+import cv2
 from ultralytics import YOLO
-from pathlib import Path
-import json
-
-logger = logging.getLogger(__name__)
 
 class Model2:
-    """Second YOLO model with different classes and saving detections"""
     def __init__(self):
-        self.save_dir = Path("results/model2")
-        self.save_dir.mkdir(parents=True, exist_ok=True)
-        
-        self.model = YOLO('yolov8n.pt')
-        if torch.cuda.is_available():
-            self.model = self.model.to('cuda')
-            torch.backends.cudnn.benchmark = True
-            torch.backends.cudnn.deterministic = False
-            torch.backends.cuda.matmul.allow_tf32 = True
-            torch.backends.cudnn.allow_tf32 = True
-        logger.info("Model 2 (YOLO) loaded")
-        
-    def process(self, frame, camera_id, timestamp):
-        with torch.inference_mode():
-            results = self.model(frame, conf=0.40, verbose=False)
+        self.api_url = 'http://192.168.100.65:3009/Detect_faces'
             
-            # Only process and save if detections found
-            if len(results[0].boxes) > 0:
-                detections = []
-                for r in results[0].boxes:
-                    box = r.xyxy[0].cpu().numpy()
-                    conf = float(r.conf[0])
-                    cls = int(r.cls[0])
-                    
-                    detections.append({
-                        "class": cls,
-                        "confidence": conf,
-                        "bbox": box.tolist()
-                    })
+    def _convert_frame_to_base64(self, frame):
+        _, buffer = cv2.imencode('.jpg', frame)
+        base64_image = base64.b64encode(buffer).decode('utf-8')
+        return f"data:image/jpeg;base64,{base64_image}"
+            
+    def _send_to_face_api(self, base64_image):
+        try:
+            headers = {'Content-Type': 'application/json'}
+            payload = {'image': base64_image}
+            
+            response = requests.post(
+                self.api_url,
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"API error: {response.status_code} - {response.text}")
+                return None
                 
-                save_path = self.save_dir / f"cam_{camera_id}_{timestamp}"
-                with open(f"{save_path}.json", 'w') as f:
-                    json.dump(detections, f, indent=2)
-                    
-                logger.debug(f"Model 2: Found {len(detections)} detections for camera {camera_id}")
-            
+        except requests.exceptions.RequestException as e:
+            print(f"Error calling Face Recognition API: {e}")
+            return None
+        
+    def process(self, frame, camera_id):
+        base64_image = self._convert_frame_to_base64(frame)
+        if base64_image:
+            face_results = self._send_to_face_api(base64_image)
+            if face_results:
+                for face in face_results:
+                    print(f"Camera {camera_id} - name: {face['name']}")
+        
         return frame
