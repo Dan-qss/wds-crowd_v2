@@ -42,6 +42,8 @@ class Model2:
             face_results = self._send_to_face_api(base64_image)
             if face_results:
                 for face in face_results:
-                    print(f"Camera {camera_id} - name: {face['name']}")
-        
+                    if face['name'] == 'Unknown':
+                        print(f"Camera {camera_id} - Unknown face detected")
+                    else:
+                        print(f"Camera {camera_id} - Name: {face['name']}")        
         return frame
