@@ -26,6 +26,20 @@ SET row_security = off;
 ALTER SCHEMA public OWNER TO postgres;
 
 --
+-- Name: face_status; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.face_status AS ENUM (
+    'authorized',
+    'unauthorized',
+    'visitor',
+    'employee'
+);
+
+
+ALTER TYPE public.face_status OWNER TO postgres;
+
+--
 -- Name: create_monthly_partition(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -62,6 +76,22 @@ $$;
 
 
 ALTER FUNCTION public.create_monthly_partition() OWNER TO postgres;
+
+--
+-- Name: update_updated_at_column(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.update_updated_at_column() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_updated_at_column() OWNER TO postgres;
 
 SET default_tablespace = '';
 
@@ -165,6 +195,22 @@ CREATE TABLE public.crowd_data_12_2024 (
 
 
 ALTER TABLE public.crowd_data_12_2024 OWNER TO postgres;
+
+--
+-- Name: face_recognition; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.face_recognition (
+    zone text,
+    camera_id text,
+    person_name text,
+    "position" text,
+    status text,
+    "timestamp" timestamp without time zone
+);
+
+
+ALTER TABLE public.face_recognition OWNER TO postgres;
 
 --
 -- Name: crowd_data_01_2025; Type: TABLE ATTACH; Schema: public; Owner: postgres
