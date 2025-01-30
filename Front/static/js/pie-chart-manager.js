@@ -2,16 +2,10 @@ export default class PieChartManager {
     constructor() {
         this.chart = null;
         this.initializeChart();
-        
-        // Initial test data
-        this.updateData({
-            blacklist: 55,
-            whitelist: 45
-        });
+        this.startDataFetching();
     }
 
     initializeChart() {
-        // Make sure the element exists
         const canvas = document.getElementById('pieChart');
         if (!canvas) {
             console.error('Pie chart canvas element not found');
@@ -25,6 +19,7 @@ export default class PieChartManager {
             data: {
                 labels: ['Blacklist', 'Whitelist'],
                 datasets: [{
+                    data: [0, 0],
                     backgroundColor: [
                         'rgba(255, 82, 82, 0.8)',  // Red color for blacklist
                         'rgba(76, 175, 80, 0.8)'   // Green color for whitelist
@@ -55,10 +50,9 @@ export default class PieChartManager {
                             padding: 15,
                             font: {
                                 size: 10,
-                                family: "'Segoe UI', sans-serif",
-                                // weight: 'bold'  
+                                family: "'Segoe UI', sans-serif"
                             },
-                            color: '#fff',  // Legend text color
+                            color: '#fff',
                             generateLabels: function(chart) {
                                 const data = chart.data;
                                 return data.labels.map((label, i) => ({
@@ -66,7 +60,7 @@ export default class PieChartManager {
                                     fillStyle: data.datasets[0].backgroundColor[i],
                                     hidden: false,
                                     index: i,
-                                    fontColor: '#fff'  // Add this line
+                                    fontColor: '#fff'
                                 }));
                             }
                         }
@@ -76,11 +70,11 @@ export default class PieChartManager {
                         backgroundColor: 'rgba(0, 0, 0, 0.8)',
                         titleFont: {
                             size: 11,
-                            color: '#fff'  // Add this
+                            color: '#fff'
                         },
                         bodyFont: {
                             size: 11,
-                            color: '#fff'  // Add this
+                            color: '#fff'
                         },
                         padding: 10,
                         callbacks: {
@@ -88,14 +82,33 @@ export default class PieChartManager {
                                 return `${context.label}: ${context.parsed}%`;
                             }
                         },
-                        titleColor: '#fff',  // Add this
-                        bodyColor: '#fff'    // Add this
+                        titleColor: '#fff',
+                        bodyColor: '#fff'
                     }
                 }
             }
         });
-        
-        
+    }
+
+    async fetchData() {
+        try {
+            const response = await fetch('http://192.168.100.65:8020/status-stats/');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            
+            // Convert the API response to the format our chart expects
+            const blackIndex = data.labels.indexOf('black');
+            const whiteIndex = data.labels.indexOf('white');
+            
+            this.updateData({
+                blacklist: data.values[blackIndex],
+                whitelist: data.values[whiteIndex]
+            });
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
     }
 
     updateData(data) {
@@ -104,16 +117,17 @@ export default class PieChartManager {
                 data.blacklist,
                 data.whitelist
             ];
-            this.chart.update(); // Update without animation
+            this.chart.update();
         }
     }
 
-    // handleWebSocketData(data) {
-    //     if (data && data.blacklistPercentage !== undefined && data.whitelistPercentage !== undefined) {
-    //         this.updateData({
-    //             blacklist: data.blacklistPercentage,
-    //             whitelist: data.whitelistPercentage
-    //         });
-    //     }
-    // }
+    startDataFetching() {
+        // Initial fetch
+        this.fetchData();
+        
+        // Set up interval for updates every 5 seconds
+        setInterval(() => {
+            this.fetchData();
+        }, 5000);
+    }
 }

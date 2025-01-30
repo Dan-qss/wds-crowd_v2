@@ -89,20 +89,12 @@ class WebSocketStreamer:
                                 frame = cv2.resize(frame, (1280, int(height * scale)))
                                 # Print resized resolution
                                 new_height, new_width = frame.shape[:2]
-                                # print(f"WebSocket Server - Camera {camera_id} resized resolution: {new_width}x{new_height}")
 
                             _, buffer = cv2.imencode('.jpg', frame, [
                                 cv2.IMWRITE_JPEG_QUALITY, self.quality
                             ])
                             frame_data = buffer.tobytes()
-                            
-                            # Print compressed size
-                            # print(f"WebSocket Server - Camera {camera_id} compressed size: {len(frame_data)} bytes")
-                            
                             compressed_data = zlib.compress(frame_data, self.compression_level)
-                            # Print final compressed size after zlib
-                            # print(f"WebSocket Server - Camera {camera_id} final compressed size: {len(compressed_data)} bytes")
-                            
                             frame_base64 = base64.b64encode(compressed_data).decode('utf-8')
                             
                             message = json.dumps({
@@ -163,7 +155,7 @@ class WebSocketStreamer:
             
             async with websockets.serve(
                 self.register, 
-                "localhost", 
+                "192.168.100.65", 
                 8765,
                 ping_interval=None,
                 ping_timeout=None,

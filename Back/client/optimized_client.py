@@ -122,29 +122,26 @@ class OptimizedCameraClient:
                         frame, timestamp = self.camera_queues[camera_id].get_nowait()
                         frame_counters[camera_id] += 1
                         
-                        # frame = cv2.resize(frame, (640, 384))
-                        # timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-
+                        # Get zone_name for this camera
+                        camera_info = next(
+                            (cam for cam in self.db.get_enabled_cameras() 
+                             if str(cam['camera_id']) == camera_id),
+                            None
+                        )
+                        zone_name = camera_info.get('zone_name') or camera_info.get('name', 'Unknown') if camera_info else 'Unknown'
+                        
                         processed_frame, data = self.model.process(
                             frame, 
                             camera_id, 
                             self.camera_capacities[camera_id]
                         )
                         
-                        # Process with other models
-                        self.model2.process(frame, camera_id)
-
+                        # Process with other models - now including zone_name
+                        self.model2.process(frame, camera_id, zone_name)
                         
-                        camera_info = next(
-                            (cam for cam in self.db.get_enabled_cameras() 
-                             if str(cam['camera_id']) == camera_id),
-                            None
-                        )
-                        
-                        if camera_info:
-                            data.update({
-                                'name': camera_info['name']
-                            })
+                        data.update({
+                            'name': zone_name
+                        })
                         
                         websocket_streamer.update_frame(camera_id, processed_frame, data)
                         

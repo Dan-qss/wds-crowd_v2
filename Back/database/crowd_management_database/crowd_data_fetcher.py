@@ -1,8 +1,8 @@
+#crowd_data_fetcher.py
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), "/database"))
 from db_connector import DatabaseConnector
-# from database.crowd_management_database.db_connector import DatabaseConnector
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
 import logging

@@ -21,7 +21,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Rest of the ROI code...
-# Dictionary to store ROIs for each camera
 camera_rois = {}
 
 def save_rois():

@@ -114,12 +114,8 @@ export default class PieChart2Manager {
         // const startTime = new Date(endTime - (2 * 60 * 1000)); // 2 minutes ago
 
         try {
-            // console.log('\n--- Fetching Data ---');
-            // console.log('Local Time Range:');
-            // console.log('Start:', this.formatDateTime(startTime));
-            // console.log('End:', this.formatDateTime(endTime));
 
-            const url = `http://127.0.0.1:8050/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
+            const url = `http://192.168.100.65:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
 
             const response = await fetch(url);
 
@@ -152,7 +148,6 @@ export default class PieChart2Manager {
     }
 
     startAutoUpdate() {
-        // console.log('Starting auto-update (2 second interval)');
         // Initial update
         this.updateLatestData();
 
@@ -172,14 +167,6 @@ export default class PieChart2Manager {
 
     updateData(data) {
         if (this.chart) {
-            // console.log('\n--- Updating Chart ---');
-            // console.log('New Values:', [
-            //     data.software,
-            //     data.robotics,
-            //     data.showroom,
-            //     data.sales
-            // ]);
-            
             this.chart.data.datasets[0].data = [
                 data.software,
                 data.robotics,
@@ -187,15 +174,12 @@ export default class PieChart2Manager {
                 data.sales
             ];
             this.chart.update();
-            // console.log('Chart updated successfully');
         }
     }
 
     handleWebSocketData(data) {
         if (data && data.software !== undefined && data.robotics !== undefined && 
             data.showroom !== undefined && data.sales !== undefined) {
-            // console.log('\n--- WebSocket Update ---');
-            // console.log('WebSocket Data:', data);
             this.updateData(data);
         }
     }
@@ -204,7 +188,6 @@ export default class PieChart2Manager {
         this.stopAutoUpdate();
         if (this.chart) {
             this.chart.destroy();
-            // console.log('Chart destroyed');
         }
     }
 }
