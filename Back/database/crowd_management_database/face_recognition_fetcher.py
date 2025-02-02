@@ -304,3 +304,38 @@ class FaceRecognitionFetcher:
             if conn:
                 self.db.return_connection(conn)
     
+    def get_gender_stats(self) -> Dict:
+        """
+        Get gender distribution statistics from unknown_recognition table
+        Returns data formatted for visualization with percentages and absolute values
+        """
+        conn = None
+        try:
+            conn = self.db.get_connection()
+            with conn.cursor() as cur:
+                # Get counts for each gender
+                cur.execute("""
+                    SELECT 
+                        gender,
+                        COUNT(*) as count
+                    FROM unknown_recognition
+                    GROUP BY gender
+                    ORDER BY count DESC
+                """)
+                
+                results = cur.fetchall()
+                total = sum(row[1] for row in results)
+                
+                # Format data as requested
+                return {
+                    'labels': [row[0] for row in results],
+                    'values': [round((row[1] / total) * 100, 1) for row in results],
+                    'absolute_values': [row[1] for row in results]
+                }
+                
+        except Exception as e:
+            logger.error(f"Error getting gender stats: {str(e)}")
+            raise
+        finally:
+            if conn:
+                self.db.return_connection(conn)

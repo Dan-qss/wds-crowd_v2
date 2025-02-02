@@ -107,8 +107,22 @@ body {
 
 }
 
-.chart {
-    height: 270px;
+
+.pie-chart .title {
+
+    margin: 0;
+    padding: 0;
+    
+}
+
+#pieChart-fm {
+    height: 100% !important;
+    width: 100%;
+    padding: 0;
+}
+
+.con{
+    height: 220px;
 }
 
 .line-chart {

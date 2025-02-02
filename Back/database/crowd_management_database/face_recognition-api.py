@@ -144,6 +144,16 @@ async def get_last_n_records_unknown(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+@app.get("/gender-stats/", response_model=StatusStats)
+async def get_gender_stats():
+    """
+    Get gender distribution statistics from unknown_recognition table
+    Returns labels, percentage values, and absolute counts
+    """
+    try:
+        return face_fetcher.get_gender_stats()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     
     
 if __name__ == "__main__":
