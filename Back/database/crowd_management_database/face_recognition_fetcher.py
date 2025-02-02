@@ -271,4 +271,36 @@ class FaceRecognitionFetcher:
             finally:
                 if conn:
                     self.db.return_connection(conn)
+
+    def get_last_n_records_unknown(self, n: int) -> List[Dict]:
+        """
+        Fetch the last N face unknown records from the database
+        
+        Args:
+            n (int): Number of last records to return
+            
+        Returns:
+            List[Dict]: List of last N face unknown records
+        """
+        conn = None
+        try:
+            conn = self.db.get_connection()
+            with conn.cursor() as cur:
+                query = """
+                    SELECT zone_name, camera_id, gender, age, timestamp
+                    FROM unknown_recognition
+                    ORDER BY timestamp DESC
+                    LIMIT %s
+                """
+                
+                cur.execute(query, (n,))
+                
+                columns = ['zone_name', 'camera_id', 'gender', 'age', 'timestamp']
+                return [dict(zip(columns, row)) for row in cur.fetchall()]
+        except Exception as e:
+            logger.error(f"Error fetching last {n} unknown records: {str(e)}")
+            raise
+        finally:
+            if conn:
+                self.db.return_connection(conn)
     

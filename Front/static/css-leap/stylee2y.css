@@ -117,6 +117,7 @@ body {
 
 .stream {
     height: 305px;
+    
 }
 
 .total{
@@ -286,5 +287,17 @@ body {
     font-size: 10px;
     letter-spacing: 1px;
     z-index: 1;
+  }
+
+  .status {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    /* background: rgba(0, 0, 0, 0.8); */
+    background: var(--heavy_crowd);
+    color: white;
+    padding: 10px;
+    border-radius: 4px;
+    z-index: 1000;
   }
 

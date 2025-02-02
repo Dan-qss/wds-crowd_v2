@@ -4,197 +4,181 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crowd Monitoring</title>
-
-    <!--bootstrap CSS-->
-    <link rel="stylesheet" href="../static/css/bootstrap-css/bootstrap.min.css">
-    <!-- ICON-->
+    <link rel="stylesheet" href="../static/css-leap/bootstrap-css/bootstrap.min.css">
     <link rel="icon" href="../static/img/qss/7.ico" type="image/x-icon">
-    <!--custom CSS-->
-    <link href="../static/css/stylee.css" rel="stylesheet">
-    <link href="../static/css/heatmap.css" rel="stylesheet">
-    <link href="../static/css/charts.css" rel="stylesheet">
+    <link href="../static/css-leap/stylee2y.css" rel="stylesheet">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <script src="../static/js/pako/pako.min.js"></script>
+    <script src="../static/js/pako/chart.js"></script>
+
+
 </head>
 <body>
-
-    <!-- Navabr Start -->
-    <nav class="navbar navbar-expand-lg ">
-       <div class="container-fluid d-flex mb-3">
-        <img src='../static/img/qss/11.png' alt="" class='qssLogo'/> 
-           <p class=" tit ">Crowd Monitoring System</p>
-           <img src='../static/img/qss/.png' alt="" class='qssLogo'/> 
-       </div>
-     </nav>
-    <!-- Navabr End -->
-
-    <!--Body-->
-    <div class="container-fluid">
-        <div class="row">
-
-        <!--face and charts start here-->
-        <div class="custom-4 col-xl-4 col-lg-4 col-md-12 col-sm-12">
-            <div class="row">
-              <!-- The last face seen start-->
-               <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 last-seen mb-2">
-                        <p class="last-seen-tit pt-1">Black and White List</p>
-                        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 face-data" id="face-panel">
-                            
-                        </div> 
-               </div>
-              <!-- The last face seen end -->
-
-              <!-- Charts start -->
-              <div class="row pie-charts g-0"> 
-                <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 piechart-container p-0 mx-2">
-                    <p class="last-seen-tit p-1">Black & White List</p>
-                    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 pie-chart">
-                        <canvas id="pieChart"></canvas>
-                    </div>
-                    <p class="last_hour">last Hour</p>
-                </div>
-            
-                <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 piechart-container p-0 mx-2">
-                    <p class="last-seen-tit p-1">Most crowded areas</p>
-                    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 pie-chart">
-                        <canvas id="pieChart2"></canvas>
-                    </div>
-                    <p class="last_hour">last Hour</p>
-                </div>
-            </div>
-
-                <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 line-chart-container mx-2 m-2">
-                    <p class="last-seen-tit p-0 m-0">Line Chart</p>
-                    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 line-chart">
-                         <canvas id="timePercentageChart"></canvas>
-                    </div>
-                    <!-- <p class="last_hour">last Hour</p> -->
-                   
-                </div>
-                <!-- Charts end -->
-
+    <!-- Header with original styling -->
+    <div class="row header shadows bg-section p-2 mb-2 d-flex justify-content-between align-items-center">
+        <div class="col-2 d-flex align-items-center">
+            <img src="../static/img/qss/qss.png" alt="Logo" class="img-fluid" style="max-height: 50px;">
+        </div>
+        <div class="col-3 d-flex justify-content-end">
+            <div class="dropdown">
+                <img src="../static/img/qss/qsslogo.png" alt="Profile" class="img-fluid rounded-circle" style="max-height: 50px; cursor: pointer;">
             </div>
         </div>
-        <!--face and charts end here-->
-
-        <!--Heatmap and streams start here-->
-        <div class="custom-8 col-xl-8 col-lg-8 col-md-12 col-sm-12 heatmap ">
-            <!-- Heat Map start-->
-            <div class="row">
-                <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 position-relative mb-2">
-                    <img src="../static/img/cms/map.png" alt="" class="main-img">
-
-                    <!-- CEO -->
-                    <div class="CEO-beta beta"></div>
-                    <div class="ceo-title center-projects">
-                        <p class="projectName">CEO Office </p>
-                    </div>
-
-                    <!-- Meeting room  -->
-                    <div class="meeting_room_beta beta"></div> 
-                    <div class="meeting-title center-projects">
-                        <p class="projectName">Meeting Room </p>
-                    </div>
-                    
-                     <!-- VP's -->
-                     <div class="vp-beta beta"></div>
-                     <div class="vp-title center-projects">
-                         <p class="projectName">VPs' Offices </p>
-                     </div>
-
-                     <!-- reception -->
-                     <div class="reception-beta beta"></div>
-                     <div class="reception-title center-projects">
-                         <p class="projectName">Reception</p>
-                     </div>
-
-                     <!-- Software lab -->
-                     <div class="software-blue"></div> 
-                     <div class="software-green"></div> 
-                     <div class="software_crowd" id="software_crowd"> </div>
-                     <div class="software-title center-projects">
-                         <p class="projectName">Software & AI lab </p>
-                         <p class="rate" id="software-per">0%</p>
-                     </div>
-
-                     <!-- lobby-->
-                     <div class="lobby-blue"></div>
-                     <div class="lobby-green"></div> 
-                     <div class="lobby-crowd" id="lobby-crowd"></div>
-                     <div class="lobby-title center-projects">
-                         <p class="projectName">Marketing & Sales </p>
-                         <p class="rate" id="lobby-per">0%</p>
-                     </div>
-
-                      <!-- Show Room -->
-                      <div class="show_room-blue"></div>
-                      <div class="show_room-green"></div> 
-                      <div class="show_room_crowd" id="show_room_crowd"></div>
-                      <div class="show-room-title center-projects">
-                         <p class="projectName">Showroom </p>
-                         <p class="rate" id="show-room-per">0%</p>
-                     </div>
-                     
-                     <!-- Robotics_lab-->
-                     <div class="Robotics_lab-blue"></div>
-                     <div class="Robotics_lab-green"></div>
-                     <div class="Robotics_lab-crowd" id="Robotics_lab-crowd"></div>
-                     <div class="Robotics_lab-title center-projects">
-                         <p class="projectName">Robotics lab </p>
-                         <p class="rate" id="Robotics_lab-per">0%</p>
-
-                     </div>
-               </div>
-            <!-- Heat Map end-->
-
-            <!--Streams start-->
-            <div class="streams-container mt-3 p-0 m-0">
-                <div class="streams5">
-                    <div class="camera-container ">
-                        <canvas id="camera1" class="camera-canvas"></canvas>
-                        <div class="camera-label">Software</div>
-                    </div>
-                </div>
-                 <div class="streams5">
-                    <div class="camera-container ">
-                        <canvas id="camera2" class="camera-canvas" ></canvas>
-                        <canvas id="camera3" class="camera-canvas"></canvas>
-                        <div class="camera-label">Robotics Lab</div>
-                    </div>
-                </div>
-                <div class="streams5">
-                    <div class="camera-container">
-                        <canvas id="camera4" class="camera-canvas"></canvas>
-                        <div class="camera-label">Showroom</div>
-                    </div>
-                </div>
-                <div class="streams5">
-                    <div class="camera-container">
-                        <canvas id="camera5"></canvas>
-                        <div class="camera-label">Marketing and Sales </div>
-                    </div>
-                </div>   
-            </div>
-               
-        </div>
-            <div class="status" id="status">Connecting...</div>
-           
-            <!--Streams end-->
-        </div>
-         
-
-        </div>
-        <!-- Heatmap and streams end here-->    
     </div>
 
+    <!-- Main Content -->
+    <div class="container-fluid">
+        <!-- First Row -->
+        <div class="row ">
+            <div class="col-4">
+                <div class="col-12 ">
+                    <div class="face-known-container">
+                        <div class="p title">Employees logs</div>
+                        <div class="col-12 face-data" id="face-panel">
+                    </div>
+                    </div>
+ 
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="Unknown">
+                            <div class="p title">Visitors logos</div>
+                            <div class="col-12 visitor-data" id="visitor-panel">
+                                <div class="unknown-data-container mx-1 my-1 py-1"> 
+                                    <div class="row">
+                                        <div class="col-3 d-flex justify-content-center align-items-start"> <!-- Changed align-items-center to align-items-start -->
+                                            <img src="../static/img/persons/famle.png" class="unknown-img" alt="">
+                                        </div>
+                                        <div class="col-9">
+                                            <p class="unknown-info" id="unknown-name">Famle</p>
+                                            <p class="unknown-info" id="unknown-age">30 - 35 years</p>
+                                            <p class="unknown-info" id="unknown-loca">humanoid robots</p>
+                                            <p class="unknown-info" id="unknown-time">1/2/2025, 07:38 pm</p>
+                                        </div>
+                                    </div>
+                                </div>
 
-<!--bootstrap JS-->
-<script src="../static/js/bootstrap-js/bootstrap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                                <div class="unknown-data-container mx-1 my-1 py-1"> 
+                                    <div class="row">
+                                        <div class="col-3 d-flex justify-content-center align-items-start"> <!-- Changed align-items-center to align-items-start -->
+                                            <img src="../static/img/persons/male.png" class="unknown-img" alt="">
+                                        </div>
+                                        <div class="col-9">
+                                            <p class="unknown-info" id="unknown-name">Male</p>
+                                            <p class="unknown-info" id="unknown-age">35 - 40 years</p>
+                                            <p class="unknown-info" id="unknown-loca">humanoid robots</p>
+                                            <p class="unknown-info" id="unknown-time">1/2/2025, 07:38 pm</p>
+                                        </div>
+                                    </div>
+                                </div>
 
-<script type="module" src="../static/js/main.js"></script>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="pie-chart">
+                            <div class="p title">Female/Male Chart</div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <div class="col-8">
+                <div class="heatmap-container">
+                    <img src="../static/img/cms/qss-leap.png" alt="" class="main-img">
+                </div>
+            </div>
+        </div>
+        <!-- Second Row -->
+        <div class="row">
+            <div class="col-5">
+                <div class="row">  <!-- Added wrapper row -->
+                    <div class="col-6">
+                        <div class="chart">
+                            <div class="p title">Female/Male Chart</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="chart">
+                            <div class="p title">Female/Male Chart</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="total">
+                            <div class="p title">Average Visitor Counter</div>
+                                <div class="col-4 total-container">
+                                    <p class="total-num" id="unknown-name">378</p>
+                                    <p class="unknown-info" id="unknown-name">Famle</p>
+
+                                    <div class="total-num">378</div>
+                                    <div class="sub-text">Total Visitors</div>
+                                </div>
+                                <div class="col-8">
+                                </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            <div class="col-7">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="line-chart"></div>
+                    </div>
+                    <div class="col-12">
+                        <div class="line-chart"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Third Row -->
+         <div class="row">
+            <div class="col-2">
+                <div class="stream">
+                    <canvas id="camera1" class="camera-canvas"></canvas>
+                    <div class="camera-label">Humanoid Robots</div>
+                </div>
+            </div>
+            <div class="col-2">
+                <div class="stream">
+                    <canvas id="camera2" class="camera-canvas" ></canvas>
+                    <div class="camera-label">Humanoid Robots</div>
+
+                </div>
+            </div>
+            <div class="col-2">
+                <div class="stream">
+                    <canvas id="camera3" class="camera-canvas" ></canvas>
+                    <div class="camera-label">Humanoid Robots</div>
+
+                </div>
+            </div>
+            <div class="col-2">
+                <div class="stream">
+                    <canvas id="camera4" class="camera-canvas"></canvas>
+                    <div class="camera-label">Humanoid Robots</div>
+
+                </div>
+            </div>
+            <div class="col-2">
+                <div class="stream">
+                    <canvas id="camera5" class="camera-canvas"></canvas>
+                    <div class="camera-label">Humanoid Robots</div>
+
+                </div>
+            </div>
+
+         </div>
+         <div class="status" id="status">Connecting...</div>
+    </div>
+
+    <script src="../static/js/bootstrap-js/bootstrap.min.js"></script> 
+    <script src="../static/js/pako/chart.js"></script>
+    <script type="module" src="../static/js/main.js"></script>
 
 </body>
 </html>

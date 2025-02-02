@@ -49,11 +49,11 @@ export default class FaceListManager {
                        <img src="${imagePath}" alt="" class="face-img" id="person-img">
                     </div>
                     <div class="col-xl-7 col-lg-7 col-md-7 col-sm-7 pt-2">
-                        <p class="personName" id="person-name">${formattedName}</p>
-                        <p class="personPosi" id="person-posi">${employee.position}</p>
-                        <p class="personPosi" id="person-posi">${formattedTime}</p>
-                        <p class="personPosi" id="f-posi">${formattedZone}</p>
-                        <p class="BWlist" id="BW-list">${employee.status } List</p>
+                        <p class="person-info" id="person-name">${formattedName}</p>
+                        <p class="person-info"" id="person-posi">${employee.position}</p>
+                        <p class="person-info"" id="person-posi">${formattedTime}</p>
+                        <p class="person-info"" id="f-posi">${formattedZone}</p>
+                        <p class="person-info"" id="BW-list">${employee.status } List</p>
                     </div>
                     <div class="col-xl-2 col-lg-2 col-md-2 col-sm-2">
                         <img src="../static/img/cms/${employee.status.includes('black') ? 'black' : 'white'}.png" alt="" class="mt-3" id="icon">
@@ -72,7 +72,7 @@ export default class FaceListManager {
         this.controller = new AbortController();
         
         try {
-            const response = await fetch('http://192.168.100.65:8020/recognitions/last/3', {
+            const response = await fetch('http://192.168.100.219:8020/recognitions/last/10', {
                 signal: this.controller.signal
             });
             

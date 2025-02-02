@@ -29,6 +29,13 @@ class Recognition(BaseModel):
     status: str
     timestamp: datetime
 
+class unknown_recognition(BaseModel):
+    zone_name: str
+    camera_id: int  # Changed from str to int
+    gender: str
+    age: int      # Changed from str to int
+    timestamp: datetime
+
 class StatusDistribution(BaseModel):
     status: str
     count: int
@@ -124,6 +131,19 @@ async def get_last_n_records(
         return face_fetcher.get_last_n_records(n)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/recognitions/unknown/last/{n}", response_model=List[unknown_recognition])
+async def get_last_n_records_unknown(
+    n: int = Path(..., gt=0, description="Number of last records to return")
+):
+    """
+    Get the last N unknown face recognition records
+    """
+    try:
+        return face_fetcher.get_last_n_records_unknown(n)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
     
     
 if __name__ == "__main__":
