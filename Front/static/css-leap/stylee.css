@@ -1,0 +1,93 @@
+:root {
+    --body-color: #101625;
+    --box-color: #1C2235;
+    --spacing: 15px;
+}
+
+body {
+    background: var(--body-color);
+    color: white;
+    font-family: cairo;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+/* Header */
+.header {
+    background: var(--box-color);
+    border-radius: 10px;
+    margin: var(--spacing) !important;
+    width: calc(100% - var(--spacing) * 2) !important;
+}
+
+.header.shadows {
+    margin-bottom: var(--spacing) !important;
+}
+
+/* Container Reset */
+.container-fluid {
+    padding: 0 var(--spacing) !important;
+    margin: 0 !important;
+    width: 100%;
+    max-width: none;
+}
+
+/* Row Spacing */
+.row {
+    margin: 0 calc(0.3 * var(--spacing)/2) !important;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+/* Column Base Styles */
+.col-2, .col-3, .col-4, .col-5, .col-6, .col-7, .col-8, .col-12 {
+    padding: calc(var(--spacing)/3) !important; 
+}
+
+/* Component Containers */
+.face-known-container,
+.heatmap-container,
+.chart,
+.line-chart,
+.stream {
+    background-color: var(--box-color);
+    border-radius: 10px;
+    height: 100%;
+    width: 99%;
+}
+
+/* Specific Heights */
+.face-known-container {
+    height: 345px;
+}
+
+.heatmap-container {
+    height: 620px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.chart {
+    height: 260px;
+}
+
+.line-chart {
+    height: 330px;
+}
+
+.stream {
+    height: 305px;
+}
+
+.main-img {
+    max-width: 97%;
+    max-height: 100%;
+    object-fit: contain;
+    width: auto;
+    height: auto;
+    border-radius: 10px;
+}
