@@ -1,22 +1,21 @@
-export default class PieChart2Manager {
+export default class PieChartCrowded {
     constructor() {
         this.chart = null;
         this.updateInterval = null;
+        this.useMockData = true; // Flag to use mock data
         this.initializeChart();
         this.startAutoUpdate();
-        // console.log('PieChart2Manager initialized');
     }
 
     initializeChart() {
-        const canvas = document.getElementById('pieChart2');
+        const canvas = document.getElementById('pieChart-crowded');
         if (!canvas) {
-            console.error('Pie chart 2 canvas element not found');
+            console.error('Pie chart canvas element not found');
             return;
         }
 
         const ctx = canvas.getContext('2d');
-        console.log('Canvas context obtained');
-        
+
         this.chart = new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -39,9 +38,9 @@ export default class PieChart2Manager {
                 cutout: '65%',
                 layout: {
                     padding: {
-                        left: 5,
-                        right: 5,
-                        top: 5,
+                        left: 15,
+                        right: 15,
+                        top: -10,
                         bottom: 5
                     }
                 },
@@ -52,17 +51,20 @@ export default class PieChart2Manager {
                         labels: {
                             usePointStyle: true,
                             pointStyle: 'circle',
-                            padding: 10,
+                            padding: 8,
                             font: {
                                 size: 10,
                                 family: "'Segoe UI', sans-serif"
                             },
                             color: '#fff',
-                            generateLabels: function(chart) {
+                            boxWidth: 6,
+                            boxHeight: 6,
+                            generateLabels: (chart) => {
                                 const data = chart.data;
+                                const dataset = data.datasets[0];
                                 return data.labels.map((label, i) => ({
-                                    text: `${label} ${data.datasets[0].data[i].toFixed(1)}%`,
-                                    fillStyle: data.datasets[0].backgroundColor[i],
+                                    text: `${label} (${dataset.data[i].toFixed(1)}%)`,
+                                    fillStyle: dataset.backgroundColor[i],
                                     hidden: false,
                                     index: i,
                                     fontColor: '#fff'
@@ -74,62 +76,70 @@ export default class PieChart2Manager {
                         enabled: true,
                         backgroundColor: 'rgba(0, 0, 0, 0.8)',
                         titleFont: {
-                            size: 11,
-                            color: '#fff'
+                            size: 11
                         },
                         bodyFont: {
-                            size: 11,
-                            color: '#fff'
+                            size: 11
                         },
-                        padding: 10,
+                        padding: 8,
                         callbacks: {
-                            label: function(context) {
+                            label: (context) => {
                                 return `${context.label}: ${context.parsed.toFixed(1)}%`;
                             }
-                        },
-                        titleColor: '#fff',
-                        bodyColor: '#fff'
+                        }
                     }
                 }
             }
         });
     }
 
-    formatDateTime(date) {
-        const pad = (num) => String(num).padStart(2, '0');
+    generateMockData() {
+        // Generate random percentages that sum to 100
+        const total = 100;
+        const randomValues = [];
+        let remaining = total;
         
-        const year = date.getFullYear();
-        const month = pad(date.getMonth() + 1);
-        const day = pad(date.getDate());
-        const hours = pad(date.getHours());
-        const minutes = pad(date.getMinutes());
-        const seconds = pad(date.getSeconds());
-
-        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        // Generate random values for first 3 items
+        for (let i = 0; i < 3; i++) {
+            const max = remaining - (3 - i);
+            const value = Math.random() * (max * 0.8); // Using 0.8 to ensure more balanced distribution
+            randomValues.push(value);
+            remaining -= value;
+        }
+        
+        // Last value is whatever remains to sum to 100
+        randomValues.push(remaining);
+        
+        return {
+            software: randomValues[0],
+            robotics: randomValues[1],
+            showroom: randomValues[2],
+            sales: randomValues[3]
+        };
     }
 
     async updateLatestData() {
+        if (this.useMockData) {
+            const mockData = this.generateMockData();
+            this.updateData(mockData);
+            return;
+        }
+
+        // Original API call code...
         const endTime = new Date();
-        const startTime = new Date(endTime - (60 * 1000)); // 60 seconds = 1 minute
-        // const startTime = new Date(endTime - (2 * 60 * 1000)); // 2 minutes ago
+        const startTime = new Date(endTime - (60 * 1000));
 
         try {
-
             const url = `http://192.168.100.65:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
-
             const response = await fetch(url);
 
             if (!response.ok) {
-                console.error('API Response Error:', response.status, response.statusText);
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
-            // console.log('\nReceived API Data:', JSON.stringify(data, null, 2));
             
             if (data.chart_data) {
-                // console.log('\nChart Data:', data.chart_data);
-                
                 const chartValues = {
                     software: data.chart_data.values[data.chart_data.labels.indexOf('software_lab')] || 0,
                     robotics: data.chart_data.values[data.chart_data.labels.indexOf('robotics_lab')] || 0,
@@ -137,31 +147,26 @@ export default class PieChart2Manager {
                     sales: data.chart_data.values[data.chart_data.labels.indexOf('marketing-&-sales')] || 0
                 };
                 
-                // console.log('\nTransformed Values:', chartValues);
                 this.updateData(chartValues);
-            } else {
-                console.warn('Invalid or missing chart_data in response:', data);
             }
         } catch (error) {
-            console.error('Error updating latest data:', error);
+            // If API fails, use mock data
+            const mockData = this.generateMockData();
+            this.updateData(mockData);
         }
     }
 
     startAutoUpdate() {
-        // Initial update
         this.updateLatestData();
-
-        // Set up interval for updates every 2 seconds
         this.updateInterval = setInterval(() => {
             this.updateLatestData();
-        }, 2000); // 2 seconds
+        }, 2000);
     }
 
     stopAutoUpdate() {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
-            console.log('Auto-update stopped');
         }
     }
 
@@ -177,17 +182,11 @@ export default class PieChart2Manager {
         }
     }
 
-    handleWebSocketData(data) {
-        if (data && data.software !== undefined && data.robotics !== undefined && 
-            data.showroom !== undefined && data.sales !== undefined) {
-            this.updateData(data);
-        }
-    }
-
     destroy() {
         this.stopAutoUpdate();
         if (this.chart) {
             this.chart.destroy();
+            this.chart = null;
         }
     }
 }

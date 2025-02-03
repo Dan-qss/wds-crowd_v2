@@ -2,12 +2,13 @@ export default class PieChartManagerfm {
     constructor() {
         this.chart = null;
         this.updateInterval = null;
+        this.useMockData = true; // Flag to use mock data
         this.initializeChart();
         this.startDataFetching();
     }
 
     initializeChart() {
-        const canvas = document.getElementById('pieChart-fm');
+        const canvas = document.getElementById('pieChart-famle-male');
         if (!canvas) {
             console.error('Pie chart canvas element not found');
             return;
@@ -22,7 +23,6 @@ export default class PieChartManagerfm {
                 datasets: [{
                     data: [0, 0],
                     backgroundColor: [
-                        
                         'rgba(123, 187, 218, 0.8)',
                         'rgba(224, 101, 218, 0.8)'
                     ],
@@ -91,29 +91,58 @@ export default class PieChartManagerfm {
         });
     }
 
+    generateMockData() {
+        // Generate random male percentage between 60% and 90%
+        const malePercentage = 60 + Math.random() * 30;
+        const femalePercentage = 100 - malePercentage;
+
+        // Generate mock absolute values (total between 100 and 200 people)
+        const totalPeople = Math.floor(100 + Math.random() * 100);
+        const malePeople = Math.floor((malePercentage / 100) * totalPeople);
+        const femalePeople = totalPeople - malePeople;
+
+        return {
+            values: [malePercentage.toFixed(1), femalePercentage.toFixed(1)],
+            absolute_values: [malePeople, femalePeople],
+            labels: ['male', 'female']
+        };
+    }
+
     async fetchData() {
+        if (this.useMockData) {
+            const mockData = this.generateMockData();
+            this.updateChartWithData(mockData);
+            return;
+        }
+
         try {
             const response = await fetch('http://192.168.100.219:8020/gender-stats/');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-            
-            // Store absolute values for tooltip
-            this.chart.data.absoluteValues = data.absolute_values;
-            
-            // Update chart data
-            this.chart.data.datasets[0].data = data.values;
-            
-            // Ensure labels match the API response
-            this.chart.data.labels = data.labels.map(label => 
-                label.charAt(0).toUpperCase() + label.slice(1).toLowerCase()
-            );
-            
-            this.chart.update();
+            this.updateChartWithData(data);
         } catch (error) {
             console.error('Error fetching gender distribution data:', error);
+            // Fallback to mock data if API fails
+            const mockData = this.generateMockData();
+            this.updateChartWithData(mockData);
         }
+    }
+
+    updateChartWithData(data) {
+        // Store absolute values for tooltip
+        this.chart.data.absoluteValues = data.absolute_values;
+        
+        // Update chart data
+        this.chart.data.datasets[0].data = data.values;
+        
+        // Ensure labels match the API response
+        this.chart.data.labels = data.labels.map(label => 
+            label.charAt(0).toUpperCase() + label.slice(1).toLowerCase()
+        );
+        
+        this.chart.update();
     }
 
     startDataFetching() {

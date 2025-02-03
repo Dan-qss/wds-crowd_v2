@@ -1,12 +1,14 @@
-export default class PieChartManager {
+export default class PieChartManagerbw {
     constructor() {
         this.chart = null;
+        this.updateInterval = null;
+        this.useMockData = true; // Flag to use mock data
         this.initializeChart();
         this.startDataFetching();
     }
 
     initializeChart() {
-        const canvas = document.getElementById('pieChart');
+        const canvas = document.getElementById('pieChart-bw');
         if (!canvas) {
             console.error('Pie chart canvas element not found');
             return;
@@ -36,7 +38,7 @@ export default class PieChartManager {
                     padding: {
                         left: 15,
                         right: 15,
-                        top: 5,
+                        top: -10,
                         bottom: 5
                     }
                 },
@@ -53,11 +55,12 @@ export default class PieChartManager {
                                 family: "'Segoe UI', sans-serif"
                             },
                             color: '#fff',
-                            generateLabels: function(chart) {
+                            generateLabels: (chart) => {
                                 const data = chart.data;
+                                const dataset = data.datasets[0];
                                 return data.labels.map((label, i) => ({
-                                    text: `${label} ${data.datasets[0].data[i]}%`,
-                                    fillStyle: data.datasets[0].backgroundColor[i],
+                                    text: `${label} (${dataset.data[i]}%)`,
+                                    fillStyle: dataset.backgroundColor[i],
                                     hidden: false,
                                     index: i,
                                     fontColor: '#fff'
@@ -69,28 +72,49 @@ export default class PieChartManager {
                         enabled: true,
                         backgroundColor: 'rgba(0, 0, 0, 0.8)',
                         titleFont: {
-                            size: 11,
-                            color: '#fff'
+                            size: 11
                         },
                         bodyFont: {
-                            size: 11,
-                            color: '#fff'
+                            size: 11
                         },
                         padding: 10,
                         callbacks: {
-                            label: function(context) {
-                                return `${context.label}: ${context.parsed}%`;
+                            label: (context) => {
+                                const value = context.parsed;
+                                const absoluteValue = this.chart.data.absoluteValues[context.dataIndex];
+                                return `${context.label}: ${value}% (${absoluteValue} people)`;
                             }
-                        },
-                        titleColor: '#fff',
-                        bodyColor: '#fff'
+                        }
                     }
                 }
             }
         });
     }
 
+    generateMockData() {
+        // Generate random whitelist percentage between 70% and 95%
+        const whitelistPercentage = 70 + Math.random() * 25;
+        const blacklistPercentage = 100 - whitelistPercentage;
+
+        // Generate mock absolute values (total between 50 and 150 people)
+        const totalPeople = Math.floor(50 + Math.random() * 100);
+        const whitelistPeople = Math.floor((whitelistPercentage / 100) * totalPeople);
+        const blacklistPeople = totalPeople - whitelistPeople;
+
+        return {
+            values: [blacklistPercentage.toFixed(1), whitelistPercentage.toFixed(1)],
+            absolute_values: [blacklistPeople, whitelistPeople],
+            labels: ['black', 'white']
+        };
+    }
+
     async fetchData() {
+        if (this.useMockData) {
+            const mockData = this.generateMockData();
+            this.updateChartWithData(mockData);
+            return;
+        }
+
         try {
             const response = await fetch('http://192.168.100.65:8020/status-stats/');
             if (!response.ok) {
@@ -98,16 +122,33 @@ export default class PieChartManager {
             }
             const data = await response.json();
             
-            // Convert the API response to the format our chart expects
             const blackIndex = data.labels.indexOf('black');
             const whiteIndex = data.labels.indexOf('white');
             
-            this.updateData({
-                blacklist: data.values[blackIndex],
-                whitelist: data.values[whiteIndex]
-            });
+            if (blackIndex !== -1 && whiteIndex !== -1) {
+                this.updateData({
+                    blacklist: data.values[blackIndex],
+                    whitelist: data.values[whiteIndex]
+                });
+            }
         } catch (error) {
             console.error('Error fetching data:', error);
+            // Fallback to mock data if API fails
+            const mockData = this.generateMockData();
+            this.updateChartWithData(mockData);
+        }
+    }
+
+    updateChartWithData(data) {
+        if (this.chart) {
+            // Store absolute values for tooltip
+            this.chart.data.absoluteValues = data.absolute_values;
+            
+            this.chart.data.datasets[0].data = [
+                data.values[0],  // blacklist
+                data.values[1]   // whitelist
+            ];
+            this.chart.update();
         }
     }
 
@@ -126,8 +167,18 @@ export default class PieChartManager {
         this.fetchData();
         
         // Set up interval for updates every 5 seconds
-        setInterval(() => {
+        this.updateInterval = setInterval(() => {
             this.fetchData();
         }, 5000);
+    }
+
+    destroy() {
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+        }
+        if (this.chart) {
+            this.chart.destroy();
+            this.chart = null;
+        }
     }
 }

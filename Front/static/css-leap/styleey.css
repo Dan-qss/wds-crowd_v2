@@ -107,7 +107,6 @@ body {
 
 }
 
-
 .pie-chart .title {
 
     margin: 0;
@@ -115,14 +114,34 @@ body {
     
 }
 
-#pieChart-fm {
+#pieChart-famle-male,
+#pieChart-bw,
+#pieChart-crowded {
     height: 100% !important;
     width: 100%;
     padding: 0;
 }
 
+canvas#timePercentageChart {
+    width: 100% !important;
+    padding: 10px;
+}
+
 .con{
-    height: 220px;
+    height: 210px;
+}
+
+.con-line{
+    height: 290px;
+}
+
+.last_hour{
+    color: #dddddd95;
+    font-weight: 200;
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding-right: 1rem;
+    text-align: right;
 }
 
 .line-chart {
@@ -130,8 +149,7 @@ body {
 }
 
 .stream {
-    height: 305px;
-    
+    height: 305px; 
 }
 
 .total{
@@ -204,8 +222,7 @@ body {
     letter-spacing: 0.5px;
     padding-bottom: 0 !important;
     margin-bottom: 0 !important;
-  }
-
+ }
 
 .visitor-data{
     height: 200px;
@@ -258,36 +275,156 @@ body {
     /* margin-top: 0 !important; */
 }
 
-.total-num{
-    height: 200px;
-    font-size: 3.5rem;  
-    font-weight: 600;   
+.total-num {
     letter-spacing: 5px;
     color: var(--text1-color);  
     text-align: center; 
-    padding: 20px 0;    
     font-family: 'Poppins', sans-serif;  
     margin-top: 4rem;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-    background: linear-gradient(45deg, #2c3e50, #3498db);
+    background: linear-gradient(45deg, #2c3e50, #db3434);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    font-size: 3.5rem;
+    font-size: 5.5rem;
     font-weight: 700;
-}
-.total-container{
-    border-right: 2px dashed #ccc;
-    margin-top: 1.5rem;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 1.2 !important;
+
+
 }
 
 .sub-text {
     font-size: 0.9rem;
     color: var(--text1-color);
-    opacity: 0.8;  /* Slightly dimmer than the number */
+    opacity: 0.8;
+    margin-top: 0.5rem; /* Add some spacing between number and text */
+}
+.total-container {
+    height: 270px;
+    margin-top: 1rem;
+    text-align: center; 
+    border-right: 2px dashed #ccc;
+
 }
 
+.cam-1{
+    height: 130px;
+    margin-top: 1rem;
+    text-align: center; 
+    border-right: 2px dashed #ccc;
+}
 
-/*  */
+.cam-2{
+    height: 130px;
+    margin-top: 1rem;
+    text-align: center; 
+}
+
+.cam-3{
+    height: 120px;
+    margin-top: 1rem;
+    text-align: center; 
+    border-right: 2px dashed #ccc;
+}
+.cam-4{
+    height: 120px;
+    margin-top: 1rem;
+    text-align: center; 
+    border-right: 2px dashed #ccc;
+
+}
+.cam-5{
+    height: 120px;
+    margin-top: 1.5rem;
+    text-align: center; 
+}
+
+.cam-1-num {
+    letter-spacing: 2px;
+    color: var(--text1-color);  
+    text-align: center; 
+    font-family: 'Poppins', sans-serif;  
+    margin-top: 2rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(45deg, #2c3e50, #4CAF50);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 1.2 !important;
+}
+
+.cam-2-num {
+    letter-spacing: 2px;
+    color: var(--text1-color);  
+    text-align: center; 
+    font-family: 'Poppins', sans-serif;  
+    margin-top: 2rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(45deg, #2c3e50, #2196F3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 1.2 !important;
+}
+
+.cam-3-num {
+    letter-spacing: 2px;
+    color: var(--text1-color);  
+    text-align: center; 
+    font-family: 'Poppins', sans-serif;  
+    margin-top: 2rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(45deg, #2c3e50, #9C27B0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 1.2 !important;
+}
+
+.cam-4-num {
+    letter-spacing: 2px;
+    color: var(--text1-color);  
+    text-align: center; 
+    font-family: 'Poppins', sans-serif;  
+    margin-top: 2rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(45deg, #2c3e50, #FFC107);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 1.2 !important;
+}
+
+.cam-5-num {
+    letter-spacing: 2px;
+    color: var(--text1-color);  
+    text-align: center; 
+    font-family: 'Poppins', sans-serif;  
+    margin-top: 2rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(45deg, #2c3e50, #0ba3a0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 1.2 !important;
+}
+
 .camera-label {
     position: absolute;
     top: 10px;
@@ -303,7 +440,7 @@ body {
     z-index: 1;
   }
 
-  .status {
+.status {
     position: fixed;
     bottom: 20px;
     right: 20px;
@@ -313,5 +450,5 @@ body {
     padding: 10px;
     border-radius: 4px;
     z-index: 1000;
-  }
+}
 
