@@ -80,7 +80,8 @@ def serve():
             ]
         )
         camera_service_pb2_grpc.add_CameraServiceServicer_to_server(CameraServicer(), server)
-        server.add_insecure_port('[::]:50051')
+    
+        server.add_insecure_port('192.168.100.219:50051')
         server.start()
         server.wait_for_termination()
     except Exception as e:

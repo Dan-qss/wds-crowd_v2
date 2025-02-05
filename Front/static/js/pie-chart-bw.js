@@ -2,9 +2,21 @@ export default class PieChartManagerbw {
     constructor() {
         this.chart = null;
         this.updateInterval = null;
-        this.useMockData = true; // Flag to use mock data
         this.initializeChart();
         this.startDataFetching();
+    }
+
+    formatDateTime(date) {
+        const pad = (num) => String(num).padStart(2, '0');
+        
+        const year = date.getFullYear();
+        const month = pad(date.getMonth() + 1);
+        const day = pad(date.getDate());
+        const hours = pad(date.getHours());
+        const minutes = pad(date.getMinutes());
+        const seconds = pad(date.getSeconds());
+
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     }
 
     initializeChart() {
@@ -13,9 +25,7 @@ export default class PieChartManagerbw {
             console.error('Pie chart canvas element not found');
             return;
         }
-
         const ctx = canvas.getContext('2d');
-
         this.chart = new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -91,74 +101,50 @@ export default class PieChartManagerbw {
         });
     }
 
-    generateMockData() {
-        // Generate random whitelist percentage between 70% and 95%
-        const whitelistPercentage = 70 + Math.random() * 25;
-        const blacklistPercentage = 100 - whitelistPercentage;
-
-        // Generate mock absolute values (total between 50 and 150 people)
-        const totalPeople = Math.floor(50 + Math.random() * 100);
-        const whitelistPeople = Math.floor((whitelistPercentage / 100) * totalPeople);
-        const blacklistPeople = totalPeople - whitelistPeople;
-
-        return {
-            values: [blacklistPercentage.toFixed(1), whitelistPercentage.toFixed(1)],
-            absolute_values: [blacklistPeople, whitelistPeople],
-            labels: ['black', 'white']
-        };
-    }
-
     async fetchData() {
-        if (this.useMockData) {
-            const mockData = this.generateMockData();
-            this.updateChartWithData(mockData);
-            return;
-        }
-
+        const endTime = new Date();
+        const startTime = new Date(endTime - (180 * 60 * 1000)); // Last 3 hour of data
+        
         try {
-            const response = await fetch('http://192.168.100.65:8020/status-stats/');
+            const url = `http://192.168.100.219:8020/status-stats/time?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
+            const response = await fetch(url);
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
             
-            const blackIndex = data.labels.indexOf('black');
-            const whiteIndex = data.labels.indexOf('white');
-            
-            if (blackIndex !== -1 && whiteIndex !== -1) {
-                this.updateData({
-                    blacklist: data.values[blackIndex],
-                    whitelist: data.values[whiteIndex]
+            if (data && data.values && data.labels) {
+                // Create a map of status to value
+                const statusMap = {};
+                data.labels.forEach((label, index) => {
+                    // Map 'black' to 'blacklist' and 'white' to 'whitelist'
+                    const mappedLabel = label === 'black' ? 'blacklist' : 
+                                      label === 'white' ? 'whitelist' : label;
+                    statusMap[mappedLabel] = {
+                        value: data.values[index],
+                        absolute: data.absolute_values[index]
+                    };
                 });
+
+                // Get values in the correct order
+                const chartData = ['blacklist', 'whitelist'].map(status => 
+                    statusMap[status] ? statusMap[status].value : 0
+                );
+
+                const absoluteValues = ['blacklist', 'whitelist'].map(status => 
+                    statusMap[status] ? statusMap[status].absolute : 0
+                );
+
+                // Update the chart
+                this.chart.data.datasets[0].data = chartData;
+                this.chart.data.absoluteValues = absoluteValues;
+                this.chart.update();
+
+               
             }
         } catch (error) {
-            console.error('Error fetching data:', error);
-            // Fallback to mock data if API fails
-            const mockData = this.generateMockData();
-            this.updateChartWithData(mockData);
-        }
-    }
-
-    updateChartWithData(data) {
-        if (this.chart) {
-            // Store absolute values for tooltip
-            this.chart.data.absoluteValues = data.absolute_values;
-            
-            this.chart.data.datasets[0].data = [
-                data.values[0],  // blacklist
-                data.values[1]   // whitelist
-            ];
-            this.chart.update();
-        }
-    }
-
-    updateData(data) {
-        if (this.chart) {
-            this.chart.data.datasets[0].data = [
-                data.blacklist,
-                data.whitelist
-            ];
-            this.chart.update();
+            console.error('Error fetching status distribution data:', error);
         }
     }
 
@@ -173,6 +159,7 @@ export default class PieChartManagerbw {
     }
 
     destroy() {
+        // Clean up resources
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
         }

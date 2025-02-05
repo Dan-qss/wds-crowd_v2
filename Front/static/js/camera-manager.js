@@ -170,24 +170,24 @@ class CameraManager {
 
         switch(data.camera_id) {
             case '1':
-                elementId = 'software_crowd';
-                percentageId = 'software-per';
+                elementId = 'Drons_crowd';
+                percentageId = 'Drons-per';
                 break;
             case '2':
-                elementId = 'Robotics_lab-crowd';
-                percentageId = 'Robotics_lab-per';
+                elementId = 'barns-crowd';
+                percentageId = 'barns-per';
                 break;
             case '3':
-                elementId = 'show_room_crowd';
-                percentageId = 'show-room-per';
+                elementId = 'Humanoid_crowd';
+                percentageId = 'Humanoid-per';
                 break;
             case '4':
-                elementId = 'show_room_crowd';
-                percentageId = 'show-room-per';
+                elementId = 'amr-crowd';
+                percentageId = 'amr-per';
                 break;
             case '5':
-                elementId = 'lobby-crowd';
-                percentageId = 'lobby-per';
+                elementId = 'catwalk-crowd';
+                percentageId = 'catwalk-per';
                 break;
             default:
                 console.warn('Unknown camera_id:', data.camera_id);

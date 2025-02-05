@@ -2,20 +2,30 @@ export default class PieChartManagerfm {
     constructor() {
         this.chart = null;
         this.updateInterval = null;
-        this.useMockData = true; // Flag to use mock data
         this.initializeChart();
         this.startDataFetching();
     }
 
+    formatDateTime(date) {
+        const pad = (num) => String(num).padStart(2, '0');
+        
+        const year = date.getFullYear();
+        const month = pad(date.getMonth() + 1);
+        const day = pad(date.getDate());
+        const hours = pad(date.getHours());
+        const minutes = pad(date.getMinutes());
+        const seconds = pad(date.getSeconds());
+
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
     initializeChart() {
-        const canvas = document.getElementById('pieChart-famle-male');
+        const canvas = document.getElementById('pieChart-fm');
         if (!canvas) {
             console.error('Pie chart canvas element not found');
             return;
         }
-
         const ctx = canvas.getContext('2d');
-
         this.chart = new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -91,58 +101,34 @@ export default class PieChartManagerfm {
         });
     }
 
-    generateMockData() {
-        // Generate random male percentage between 60% and 90%
-        const malePercentage = 60 + Math.random() * 30;
-        const femalePercentage = 100 - malePercentage;
-
-        // Generate mock absolute values (total between 100 and 200 people)
-        const totalPeople = Math.floor(100 + Math.random() * 100);
-        const malePeople = Math.floor((malePercentage / 100) * totalPeople);
-        const femalePeople = totalPeople - malePeople;
-
-        return {
-            values: [malePercentage.toFixed(1), femalePercentage.toFixed(1)],
-            absolute_values: [malePeople, femalePeople],
-            labels: ['male', 'female']
-        };
-    }
-
     async fetchData() {
-        if (this.useMockData) {
-            const mockData = this.generateMockData();
-            this.updateChartWithData(mockData);
-            return;
-        }
+        const endTime = new Date();
+        const startTime = new Date(endTime - (180 * 60 * 1000)); // Last hour of data
 
         try {
-            const response = await fetch('http://192.168.100.219:8020/gender-stats/');
+            const url = `http://192.168.100.219:8020/gender-stats/time?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
+            const response = await fetch(url);
+            
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-            this.updateChartWithData(data);
+            
+            // Store absolute values for tooltip
+            this.chart.data.absoluteValues = data.absolute_values;
+            
+            // Update chart data
+            this.chart.data.datasets[0].data = data.values;
+            
+            // Ensure labels match the API response
+            this.chart.data.labels = data.labels.map(label => 
+                label.charAt(0).toUpperCase() + label.slice(1).toLowerCase()
+            );
+            
+            this.chart.update();
         } catch (error) {
             console.error('Error fetching gender distribution data:', error);
-            // Fallback to mock data if API fails
-            const mockData = this.generateMockData();
-            this.updateChartWithData(mockData);
         }
-    }
-
-    updateChartWithData(data) {
-        // Store absolute values for tooltip
-        this.chart.data.absoluteValues = data.absolute_values;
-        
-        // Update chart data
-        this.chart.data.datasets[0].data = data.values;
-        
-        // Ensure labels match the API response
-        this.chart.data.labels = data.labels.map(label => 
-            label.charAt(0).toUpperCase() + label.slice(1).toLowerCase()
-        );
-        
-        this.chart.update();
     }
 
     startDataFetching() {

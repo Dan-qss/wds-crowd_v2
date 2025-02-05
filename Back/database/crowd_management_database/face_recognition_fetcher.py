@@ -339,3 +339,101 @@ class FaceRecognitionFetcher:
         finally:
             if conn:
                 self.db.return_connection(conn)
+
+    def get_gender_stats_by_time(self, start_time: datetime, end_time: datetime) -> Dict:
+        """
+        Get gender distribution statistics within a specific time range
+        
+        Args:
+            start_time (datetime): Start of the time range
+            end_time (datetime): End of the time range
+            
+        Returns:
+            Dict: Data formatted for visualization with percentages and absolute values
+        """
+        conn = None
+        try:
+            conn = self.db.get_connection()
+            with conn.cursor() as cur:
+                # Get counts for each gender within time range
+                cur.execute("""
+                    SELECT 
+                        gender,
+                        COUNT(*) as count
+                    FROM unknown_recognition
+                    WHERE timestamp >= %s AND timestamp <= %s
+                    GROUP BY gender
+                    ORDER BY count DESC
+                """, (start_time, end_time))
+                
+                results = cur.fetchall()
+                total = sum(row[1] for row in results) if results else 0
+                
+                # Format data for visualization
+                return {
+                    'labels': [row[0] for row in results],
+                    'values': [round((row[1] / total) * 100, 1) for row in results] if total > 0 else [],
+                    'absolute_values': [row[1] for row in results],
+                    'time_range': {
+                        'start': start_time.isoformat(),
+                        'end': end_time.isoformat()
+                    }
+                }
+                
+        except Exception as e:
+            logger.error(f"Error getting gender stats by time range: {str(e)}")
+            raise
+        finally:
+            if conn:
+                self.db.return_connection(conn)
+
+
+    def get_status_stats_by_time(self, start_time: datetime, end_time: datetime) -> Dict:
+        """
+        Get status statistics with counts and percentages within a specific time range
+        
+        Args:
+            start_time (datetime): Start of the time range
+            end_time (datetime): End of the time range
+            
+        Returns:
+            Dict: Data formatted for pie chart visualization including:
+                - labels: list of status names
+                - values: list of percentage values
+                - absolute_values: list of raw counts
+        """
+        conn = None
+        try:
+            conn = self.db.get_connection()
+            with conn.cursor() as cur:
+                # Get counts for each status within time range
+                cur.execute("""
+                    SELECT 
+                        status,
+                        COUNT(*) as count
+                    FROM face_recognition
+                    WHERE timestamp >= %s AND timestamp <= %s
+                    GROUP BY status
+                    ORDER BY count DESC
+                """, (start_time, end_time))
+                
+                results = cur.fetchall()
+                total = sum(row[1] for row in results) if results else 0
+                
+                # Format data for pie chart
+                return {
+                    'labels': [row[0] for row in results],
+                    'values': [round((row[1] / total) * 100, 1) for row in results] if total > 0 else [],
+                    'absolute_values': [row[1] for row in results],
+                    'time_range': {
+                        'start': start_time.isoformat(),
+                        'end': end_time.isoformat()
+                    }
+                }
+                
+        except Exception as e:
+            logger.error(f"Error getting status stats by time range: {str(e)}")
+            raise
+        finally:
+            if conn:
+                self.db.return_connection(conn)

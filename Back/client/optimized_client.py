@@ -18,7 +18,9 @@ import logging
 from datetime import datetime
 import json
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+# sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from websocket_server import WebSocketStreamer
 from database.camera_system_database.db_connector import DatabaseConnector
 from database.camera_system_database.db_config import DB_CONFIG
@@ -47,7 +49,7 @@ class OptimizedCameraClient:
         try:
             self.camera_ids = camera_ids
             self.channel = grpc.insecure_channel(
-                '127.0.0.1:50051',
+                '192.168.100.219:50051',
                 options=[
                     ('grpc.max_send_message_length', 100 * 1024 * 1024),
                     ('grpc.max_receive_message_length', 100 * 1024 * 1024),

@@ -29,7 +29,7 @@ body {
     background: var(--body-color);
     color: white;
     font-family: cairo;
-    overflow: hidden;
+    /* overflow: hidden; */
     margin: 0;
     padding: 0;
 }
@@ -275,24 +275,7 @@ canvas#timePercentageChart {
     /* margin-top: 0 !important; */
 }
 
-.total-num {
-    letter-spacing: 5px;
-    color: var(--text1-color);  
-    text-align: center; 
-    font-family: 'Poppins', sans-serif;  
-    margin-top: 4rem;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-    background: linear-gradient(45deg, #2c3e50, #db3434);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-size: 5.5rem;
-    font-weight: 700;
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-    line-height: 1.2 !important;
 
-
-}
 
 .sub-text {
     font-size: 0.9rem;
@@ -339,6 +322,38 @@ canvas#timePercentageChart {
     margin-top: 1.5rem;
     text-align: center; 
 }
+.total-num, .cam-1-num, .cam-2-num, .cam-3-num, .cam-4-num, .cam-5-num {
+    transition: text-shadow 0.5s ease;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.pulse-animation {
+    animation: pulse 0.3s ease-in-out;
+}
+
+/* Your existing styles with added transition properties */
+.total-num {
+    letter-spacing: 5px;
+    color: var(--text1-color);  
+    text-align: center; 
+    font-family: 'Poppins', sans-serif;  
+    margin-top: 4rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(45deg, #2c3e50, #db3434);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 5.5rem;
+    font-weight: 700;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 1.2 !important;
+    transition: transform 0.5s ease;
+}
 
 .cam-1-num {
     letter-spacing: 2px;
@@ -355,6 +370,7 @@ canvas#timePercentageChart {
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
     line-height: 1.2 !important;
+    transition: transform 0.5s ease;
 }
 
 .cam-2-num {
@@ -372,6 +388,8 @@ canvas#timePercentageChart {
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
     line-height: 1.2 !important;
+    transition: transform 0.5s ease;
+
 }
 
 .cam-3-num {
@@ -389,6 +407,8 @@ canvas#timePercentageChart {
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
     line-height: 1.2 !important;
+    transition: transform 0.5s ease;
+
 }
 
 .cam-4-num {
@@ -406,6 +426,8 @@ canvas#timePercentageChart {
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
     line-height: 1.2 !important;
+    transition: transform 0.5s ease;
+
 }
 
 .cam-5-num {
@@ -423,6 +445,8 @@ canvas#timePercentageChart {
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
     line-height: 1.2 !important;
+    transition: transform 0.5s ease;
+
 }
 
 .camera-label {
@@ -450,5 +474,6 @@ canvas#timePercentageChart {
     padding: 10px;
     border-radius: 4px;
     z-index: 1000;
+    width: 100px;
 }
 

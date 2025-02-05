@@ -34,20 +34,22 @@ export default class VisitorListManager {
                     .join(' ');
             };
 
-            // Format age range with fallback
+            // Format age range with fallback and age restriction
             const formatAgeRange = (age) => {
                 if (!age || isNaN(age)) return 'Unknown age';
-                return `${age - 5} - ${age + 5} years`;
+                if (age < 18) return ''; // Don't display age for minors
+                return `${age - 2} - ${age + 3} years`;
             };
 
             // Use fallbacks for all properties
-            const gender = visitor.gender || 'unknown';
+            const gender = visitor.gender;
             const age = visitor.age || 0;
             const zone = visitor.zone_name;
 
             const imagePath = `../static/img/persons/${gender.toLowerCase()}.png`;
             const formattedGender = formatName(gender);
             const formattedZone = formatName(zone);
+            const ageDisplay = formatAgeRange(age);
 
             visitorContainer.innerHTML = `
                 <div class="row">
@@ -56,7 +58,7 @@ export default class VisitorListManager {
                     </div>
                     <div class="col-9">
                         <p class="unknown-info" id="unknown-name">${formattedGender}</p>
-                        <p class="unknown-info" id="unknown-age">${formatAgeRange(age)}</p>
+                        ${ageDisplay ? `<p class="unknown-info" id="unknown-age">${ageDisplay}</p>` : ''}
                         <p class="unknown-info" id="unknown-loca">${formattedZone}</p>
                         <p class="unknown-info" id="unknown-time">${formattedDateTime}</p>
                     </div>

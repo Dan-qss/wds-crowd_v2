@@ -7,6 +7,7 @@ import PieChartManagerbw from './pie-chart-bw.js';
 import PieChartCrowded from './pie-chart-crowded.js';
 import SeriesLineCrowded from './series-line-crowded.js';
 import SeriesLineDays from './series-line-dyes.js';
+import VisitorCounter from './visitor-counter.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const cameraManager = new CameraManager();
@@ -17,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pieChartCrowded = new PieChartCrowded();
     const seriesLineCrowded = new SeriesLineCrowded();
     const seriesLineDays = new SeriesLineDays();
+    const visitorCounter = new VisitorCounter();
 
 
     const wsHandler = new WebSocketHandler('ws://192.168.100.219:8765', (data) => {
@@ -42,3 +44,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
