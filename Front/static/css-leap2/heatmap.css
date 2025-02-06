@@ -1,0 +1,289 @@
+.position-relative {
+    position: relative;
+  }
+.Drons-blue {
+    position: absolute;
+    top: 30px; 
+    left: 50px; 
+    width: 270px; 
+    height: 365px; 
+    background-color: var(--basic-color); 
+    border-radius: 30%; 
+    box-sizing: border-box;
+    border: transparent transparent;
+    background-clip: padding-box;
+    box-shadow: 0px 0px 25px 15px var(--shadow-color-blue);
+    transform: none;
+}
+.Drons-green{
+    position: absolute;
+    top: 33px; 
+    left: 55px; 
+    width: 260px; 
+    height: 370px;
+    background-color:var(--second-layer); 
+    border-radius: 30%; 
+    box-sizing: border-box;
+    border: transparent transparent;
+    background-clip: padding-box;
+    box-shadow:  0px 0px 25px 15px var(--second-shadow-green);
+    transform: none;
+}  
+.Drons_crowd{
+    position: absolute;
+    top: 65px; 
+    left: 75px; 
+    width: 230px; 
+    height: 310px;
+    background-color: var(--heavy_crowd);
+    border-radius: 30% ; 
+    box-sizing: border-box;
+    border: transparent transparent;
+    background-clip: padding-box;
+    box-shadow: 0px 0px 25px 15px var(--heavy_crowd_shadow);
+    animation: rectangular 5s infinite linear;
+} 
+
+/* barns */
+.barns-blue{
+  position: absolute;
+  top: 50px; 
+  left: 350px; 
+  width: 780px; 
+  height: 200px;  
+  background-color: var(--basic-color); 
+  border-radius: 30%; 
+  box-sizing: border-box;
+  border: transparent transparent;
+  background-clip: padding-box;
+  box-shadow: 0px 0px 25px 15px var(--shadow-color-blue);
+  transform: none;
+}
+ .barns-green{
+  position: absolute;
+  top: 63px; 
+  left: 360px; 
+  width: 750px; 
+  height: 180px; 
+  background-color:var(--second-layer); 
+  border-radius: 30%; 
+  box-sizing: border-box;
+  border: transparent transparent;
+  background-clip: padding-box;
+  box-shadow:  0px 0px 25px 15px var(--second-shadow-green);
+  transform: none;
+} 
+.barns-crowd{
+  position: absolute;
+  top: 75px; 
+  left: 375px; 
+  width: 740px; 
+  height: 150px; 
+  background-color:var(--moderate_crowd); 
+  border-radius: 30%; 
+  box-sizing: border-box;
+  background-clip: padding-box;
+  box-shadow:  0px 0px 25px 15px var(--moderate_crowd);
+  animation: rectangular 5s infinite linear;
+} 
+
+/* Show Room */
+.Humanoid-blue{
+    position: absolute;
+    top: 550px; 
+    left: 350px; 
+    width: 780px; 
+    height: 200px; 
+    background-color: var(--basic-color); 
+    border-radius: 20%; 
+    box-sizing: border-box;
+    border: transparent transparent;
+    background-clip: padding-box;
+    box-shadow: 0px 0px 25px 15px var(--shadow-color-blue);
+    transform: none;
+}
+.Humanoid-green{
+    position: absolute;
+    top: 560px; 
+    left: 360px; 
+    width: 760px; 
+    height: 180px; 
+    background-color:var(--second-layer); 
+    border-radius: 20%; 
+    box-sizing: border-box;
+    border: transparent transparent;
+    background-clip: padding-box;
+    box-shadow:  0px 0px 25px 15px var(--second-shadow-green);
+    transform: none;
+} 
+.Humanoid_crowd{
+    position: absolute;
+    top: 580px; 
+    left: 375px; 
+    width: 720px; 
+    height: 130px; 
+    background-color: var(--heavy_crowd);
+    border-radius: 20%; 
+    box-sizing: border-box;
+    background-clip: padding-box;
+    box-shadow: 0px 0px 25px 15px var(--heavy_crowd_shadow);
+    animation: rectangular 5s infinite linear;
+} 
+
+/* amr */
+.amr-blue{
+  position: absolute;
+  top: 400px; 
+  left: 50px; 
+  width: 270px; 
+  height: 370px;  
+  background-color: var(--basic-color); 
+  border-radius: 30%; 
+  box-sizing: border-box;
+  border: transparent transparent;
+  background-clip: padding-box;
+  box-shadow: 0px 0px 25px 15px var(--shadow-color-blue);
+  transform: none;
+}
+.amr-green{
+  position: absolute;
+  top:410px; 
+  left: 55px; 
+  width: 260px; 
+  height: 360px;
+  background-color:var(--second-layer); 
+  border-radius: 40%; 
+  box-sizing: border-box;
+  border: transparent transparent;
+  background-clip: padding-box;
+  box-shadow:  0px 0px 25px 15px var(--second-shadow-green);
+  transform: none;
+}
+.amr-crowd{
+  position: absolute;
+  top: 430px; 
+  left: 75px; 
+  width: 230px; 
+  height: 310px;
+  background-color:var(--no_crowd); 
+  border-radius: 40%; 
+  box-sizing: border-box;
+  background-clip: padding-box;
+  box-shadow:  0px 0px 25px 15px var(--no_crowd_shadow);
+  animation: rectangular 20s infinite linear;
+
+}
+
+
+.catwalk-blue {
+  position: absolute;
+  top: 50px; 
+  left: 1100px; 
+  width: 320px; 
+  height: 700px; 
+  background-color: var(--basic-color); 
+  border-radius: 30%; 
+  box-sizing: border-box;
+  border: transparent transparent;
+  background-clip: padding-box;
+  box-shadow: 0px 0px 25px 15px var(--shadow-color-blue);
+  transform: none;
+}
+.catwalk-green{
+  position: absolute;
+  top: 63px; 
+  left: 1110px; 
+  width: 295px; 
+  height: 680px;
+  background-color:var(--second-layer); 
+  border-radius: 30%; 
+  box-sizing: border-box;
+  border: transparent transparent;
+  background-clip: padding-box;
+  box-shadow:  0px 0px 25px 15px var(--second-shadow-green);
+  transform: none;
+}  
+
+.catwalk-crowd{
+  position: absolute;
+  top: 75px; 
+  left: 1140px; 
+  width: 235px; 
+  height: 650px;
+  background-color: var(--heavy_crowd);
+  border-radius: 30% ; 
+  box-sizing: border-box;
+  border: transparent transparent;
+  background-clip: padding-box;
+  box-shadow: 0px 0px 25px 15px var(--heavy_crowd_shadow);
+  animation: rectangular 5s infinite linear;
+} 
+.center-projects {
+  position: absolute;
+  background-color: var(--body-color);
+  border-radius: 10px; 
+  box-sizing: border-box;
+  border: transparent transparent;
+  background-clip: padding-box;
+  transform: none;
+  display: flex; 
+  justify-content: center;
+  align-items: center; 
+  width: 130px;
+  height: 35px;
+  opacity: 1; 
+}
+
+.projectName {
+  color: var(--conter);
+  font-family: Poppins;
+  font-size: 10px;
+  font-weight: 400;
+  /* letter-spacing: -0.01em; */
+  letter-spacing: 1px;
+  margin: 0;
+  padding: 0;
+  line-height: 1.2;
+}
+
+.rate {
+  font-family: Poppins;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--conter);
+  margin: 0;
+  padding: 0;
+  line-height: 1.2;
+  text-align: right;
+}
+.Drons-title{
+  top: 40px; 
+  left: 50px; 
+  gap: 5px;
+}
+
+.barns-title{
+  top: 40px; 
+  left: 330px; 
+  gap: 5px;
+
+}
+
+.amr-title{
+  top: 420px; 
+  left: 50px; 
+  gap: 5px;
+}
+
+.Humanoid-title{
+  top: 550px; 
+  left: 330px; 
+  gap: 5px;
+} 
+
+
+.catwalk-title{
+  top: 40px; 
+  left: 1150px; 
+  gap: 5px;
+}

@@ -128,7 +128,7 @@ export default class SeriesLineDays {
                     labels: this.generateTimeLabels(),
                     datasets: [
                         {
-                            label: '5 Feb 2025',
+                            label: '9 Feb 2025',
                             data: Array(this.TOTAL_SLOTS).fill(null),
                             borderColor: '#FF0000',
                             backgroundColor: 'rgba(255, 0, 0, 0.1)',
