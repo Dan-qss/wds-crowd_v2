@@ -4,8 +4,8 @@ export default class SeriesLineCrowded {
         this.updateInterval = null;
         this.chartInitialized = false;
         this.canvasId = 'serieslinecrowded';
-        this.START_HOUR = 11;
-        this.END_HOUR = 20;
+        this.START_HOUR = 12;  // 12 PM
+        this.END_HOUR = 21;    // 9 PM
         this.SLOTS_PER_HOUR = 30;
         this.TOTAL_SLOTS = (this.END_HOUR - this.START_HOUR) * this.SLOTS_PER_HOUR;
 
@@ -54,7 +54,7 @@ export default class SeriesLineCrowded {
         try {
             const softwareData = Array(this.TOTAL_SLOTS).fill(null);
             const roboticsData = Array(this.TOTAL_SLOTS).fill(null);
-            const showroomData = Array(this.TOTAL_SLOTS).fill(null);
+            const barista_robotData = Array(this.TOTAL_SLOTS).fill(null);
             const salesData = Array(this.TOTAL_SLOTS).fill(null);
             const industrialData = Array(this.TOTAL_SLOTS).fill(null);
 
@@ -77,19 +77,19 @@ export default class SeriesLineCrowded {
                         const slotIndex = this.calculateTimeSlotIndex(currentSlotStart);
                         
                         const zoneIndices = {
-                            'software_lab': data.chart_data.labels.indexOf('software_lab'),
-                            'robotics_lab': data.chart_data.labels.indexOf('robotics_lab'),
-                            'showroom': data.chart_data.labels.indexOf('showroom'),
-                            'marketing-&-sales': data.chart_data.labels.indexOf('marketing-&-sales'),
-                            'industrial_robot': data.chart_data.labels.indexOf('industrial_robot')
+                            'drones': data.chart_data.labels.indexOf('drones'),
+                            'amr': data.chart_data.labels.indexOf('amr'),
+                            'barista_robot': data.chart_data.labels.indexOf('barista_robot'),
+                            'mosaed_robot': data.chart_data.labels.indexOf('mosaed_robot'),
+                            'humanoid_robot': data.chart_data.labels.indexOf('humanoid_robot')
                         };
 
                         if (slotIndex >= 0 && slotIndex < softwareData.length) {
-                            softwareData[slotIndex] = data.chart_data.absolute_values[zoneIndices['software_lab']] || 0;
-                            roboticsData[slotIndex] = data.chart_data.absolute_values[zoneIndices['robotics_lab']] || 0;
-                            showroomData[slotIndex] = data.chart_data.absolute_values[zoneIndices['showroom']] || 0;
-                            salesData[slotIndex] = data.chart_data.absolute_values[zoneIndices['marketing-&-sales']] || 0;
-                            industrialData[slotIndex] = data.chart_data.absolute_values[zoneIndices['industrial_robot']] || 0;
+                            softwareData[slotIndex] = data.chart_data.absolute_values[zoneIndices['drones']] || 0;
+                            roboticsData[slotIndex] = data.chart_data.absolute_values[zoneIndices['amr']] || 0;
+                            barista_robotData[slotIndex] = data.chart_data.absolute_values[zoneIndices['barista_robot']] || 0;
+                            salesData[slotIndex] = data.chart_data.absolute_values[zoneIndices['mosaed_robot']] || 0;
+                            industrialData[slotIndex] = data.chart_data.absolute_values[zoneIndices['humanoid_robot']] || 0;
                         }
                     }
                 } catch (error) {
@@ -102,7 +102,7 @@ export default class SeriesLineCrowded {
             if (this.chart && this.chart.data && this.chart.data.datasets) {
                 this.chart.data.datasets[0].data = softwareData;
                 this.chart.data.datasets[1].data = roboticsData;
-                this.chart.data.datasets[2].data = showroomData;
+                this.chart.data.datasets[2].data = barista_robotData;
                 this.chart.data.datasets[3].data = salesData;
                 this.chart.data.datasets[4].data = industrialData;
 
@@ -149,7 +149,7 @@ export default class SeriesLineCrowded {
                             pointHoverRadius: 4
                         },
                         {
-                            label: 'Barista Robot',
+                            label: 'AMR',
                             data: Array(this.TOTAL_SLOTS).fill(null),
                             borderColor: '#2196F3',
                             backgroundColor: 'rgba(33, 150, 243, 0.1)',
@@ -159,7 +159,7 @@ export default class SeriesLineCrowded {
                             pointHoverRadius: 4
                         },
                         {
-                            label: 'Mosaed Robot',
+                            label: 'Barista Robot',
                             data: Array(this.TOTAL_SLOTS).fill(null),
                             borderColor: '#FFD93D',
                             backgroundColor: 'rgba(255, 217, 61, 0.1)',
@@ -169,7 +169,7 @@ export default class SeriesLineCrowded {
                             pointHoverRadius: 4
                         },
                         {
-                            label: 'AMR',
+                            label: 'Mosaed Robot',
                             data: Array(this.TOTAL_SLOTS).fill(null),
                             borderColor: '#9C27B0',
                             backgroundColor: 'rgba(156, 39, 176, 0.1)',
@@ -179,7 +179,7 @@ export default class SeriesLineCrowded {
                             pointHoverRadius: 4
                         },
                         {
-                            label: 'Industrial Robot',
+                            label: 'Humanoid Robot',
                             data: Array(this.TOTAL_SLOTS).fill(null),
                             borderColor: '#FF5722',
                             backgroundColor: 'rgba(255, 87, 34, 0.1)',
@@ -246,7 +246,7 @@ export default class SeriesLineCrowded {
                                 autoSkip: false,
                                 callback: (value, index) => {
                                     if (index % 30 === 0) {
-                                        const hour = 11 + Math.floor(index / 30);
+                                        const hour = Math.floor(index / 30) + this.START_HOUR;
                                         if (hour === 12) return '12 PM';
                                         return hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
                                     }
@@ -276,7 +276,7 @@ export default class SeriesLineCrowded {
 
     async fetchHistoricalData(startTime, endTime) {
         try {
-            const url = `http://192.168.100.219:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
+            const url = `http://192.168.8.15:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
             const response = await fetch(url);
 
             if (!response.ok) {
@@ -314,11 +314,11 @@ export default class SeriesLineCrowded {
                 const dataIndex = this.calculateTimeSlotIndex(now);
 
                 const zoneIndices = {
-                    'software_lab': data.chart_data.labels.indexOf('software_lab'),
-                    'robotics_lab': data.chart_data.labels.indexOf('robotics_lab'),
-                    'showroom': data.chart_data.labels.indexOf('showroom'),
-                    'marketing-&-sales': data.chart_data.labels.indexOf('marketing-&-sales'),
-                    'industrial_robot': data.chart_data.labels.indexOf('industrial_robot')
+                    'drones': data.chart_data.labels.indexOf('drones'),
+                    'amr': data.chart_data.labels.indexOf('amr'),
+                    'barista_robot': data.chart_data.labels.indexOf('barista_robot'),
+                    'mosaed_robot': data.chart_data.labels.indexOf('mosaed_robot'),
+                    'humanoid_robot': data.chart_data.labels.indexOf('humanoid_robot')
                 };
 
                 this.chart.data.datasets.forEach((dataset, index) => {
@@ -327,11 +327,11 @@ export default class SeriesLineCrowded {
                     }
                 });
 
-                this.chart.data.datasets[0].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['software_lab']] || 0;
-                this.chart.data.datasets[1].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['robotics_lab']] || 0;
-                this.chart.data.datasets[2].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['showroom']] || 0;
-                this.chart.data.datasets[3].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['marketing-&-sales']] || 0;
-                this.chart.data.datasets[4].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['industrial_robot']] || 0;
+                this.chart.data.datasets[0].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['drones']] || 0;
+                this.chart.data.datasets[1].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['amr']] || 0;
+                this.chart.data.datasets[2].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['barista_robot']] || 0;
+                this.chart.data.datasets[3].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['mosaed_robot']] || 0;
+                this.chart.data.datasets[4].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['humanoid_robot']] || 0;
 
                 this.chart.update('none');
             }
@@ -356,7 +356,6 @@ export default class SeriesLineCrowded {
             this.updateLatestData();
         }, 120 * 1000);
     }
-
     destroy() {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);

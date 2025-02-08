@@ -9,11 +9,11 @@ class CameraManager {
 
     initializeCameraData() {
         return {
-            '1': this.createCameraDataObject(),
-            '2': this.createCameraDataObject(),
-            '3': this.createCameraDataObject(),
-            '4': this.createCameraDataObject(),
-            '5': this.createCameraDataObject()
+            '8': this.createCameraDataObject(),
+            '9': this.createCameraDataObject(),
+            '10': this.createCameraDataObject(),
+            '11': this.createCameraDataObject(),
+            '12': this.createCameraDataObject()
         };
     }
 
@@ -28,7 +28,7 @@ class CameraManager {
     }
 
     initializeCameras() {
-        const cameraIds = ['1', '2', '3', '4', '5'];
+        const cameraIds = ['8', '9', '10', '11', '12'];
         for (let id of cameraIds) {
             const canvas = document.getElementById(`camera${id}`);
             if (canvas) {
@@ -169,25 +169,25 @@ class CameraManager {
         const stats = this.calculateAverageAndMode(data.camera_id, percentage, crowdingLevel);
 
         switch(data.camera_id) {
-            case '1':
+            case '8':
                 elementId = 'Drons_crowd';
                 percentageId = 'Drons-per';
                 break;
-            case '2':
-                elementId = 'barns-crowd';
-                percentageId = 'barns-per';
-                break;
-            case '3':
-                elementId = 'Humanoid_crowd';
-                percentageId = 'Humanoid-per';
-                break;
-            case '4':
+            case '9':
                 elementId = 'amr-crowd';
                 percentageId = 'amr-per';
                 break;
-            case '5':
+            case '10':
+                elementId = 'barns-crowd';
+                percentageId = 'barns-per';
+                break;
+            case '11':
                 elementId = 'catwalk-crowd';
                 percentageId = 'catwalk-per';
+                break;
+            case '12':
+                elementId = 'Humanoid_crowd';
+                percentageId = 'Humanoid-per';
                 break;
             default:
                 console.warn('Unknown camera_id:', data.camera_id);

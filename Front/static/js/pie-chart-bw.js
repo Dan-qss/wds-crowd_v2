@@ -61,7 +61,7 @@ export default class PieChartManagerbw {
                             pointStyle: 'circle',
                             padding: 15,
                             font: {
-                                size: 10,
+                                size: 15,
                                 family: "'Segoe UI', sans-serif"
                             },
                             color: '#fff',
@@ -82,10 +82,10 @@ export default class PieChartManagerbw {
                         enabled: true,
                         backgroundColor: 'rgba(0, 0, 0, 0.8)',
                         titleFont: {
-                            size: 11
+                            size: 15
                         },
                         bodyFont: {
-                            size: 11
+                            size: 15
                         },
                         padding: 10,
                         callbacks: {
@@ -106,7 +106,7 @@ export default class PieChartManagerbw {
         const startTime = new Date(endTime - (180 * 60 * 1000)); // Last 3 hour of data
         
         try {
-            const url = `http://192.168.100.219:8020/status-stats/time?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
+            const url = `http://192.168.8.15:8020/status-stats/time?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
             const response = await fetch(url);
 
             if (!response.ok) {

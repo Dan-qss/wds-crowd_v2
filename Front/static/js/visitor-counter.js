@@ -3,7 +3,7 @@ export default class VisitorCounter {
         this.updateInterval = null;
         this.previousValues = {
             total: 0,
-            cameras: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+            cameras: {8: 0, 9: 0, 10: 0, 11: 0, 12: 0}
         };
         this.startAutoUpdate();
     }
@@ -51,7 +51,7 @@ export default class VisitorCounter {
         const startTime = new Date(endTime - (60 * 1000));
 
         try {
-            const url = `http://192.168.100.219:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
+            const url = `http://192.168.8.15:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
             const response = await fetch(url);
 
             if (!response.ok) {
@@ -79,11 +79,11 @@ export default class VisitorCounter {
                     counters.total += roundedPeople;
 
                     const elementIds = {
-                        1: 'drons-num',
-                        2: 'barns-num',
-                        3: 'humanoid-num',
-                        4: 'amr-num',
-                        5: 'catwalk-num'
+                        8: 'drons-num',
+                        9: 'barns-num',
+                        10: 'humanoid-num',
+                        11: 'amr-num',
+                        12: 'catwalk-num'
                     };
 
                     const elementId = elementIds[camera.camera_id];

@@ -19,7 +19,7 @@ export default class PieChartCrowded {
         this.chart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Drones', 'Barista Robot', 'Mosaed Robot', 'AMR', 'Industrial Robot'],
+                labels: ['Drones', 'AMR', 'Barista Robot', 'Mosaed Robot', 'Humanoid Robot'],
                 datasets: [{
                     data: [0, 0, 0, 0, 0],
                     backgroundColor: [
@@ -27,7 +27,7 @@ export default class PieChartCrowded {
                         '#2196F3',    // Blue
                         '#FFC107',    // Yellow
                         '#9C27B0',    // Purple
-                        '#FF5722'     // Orange (Industrial Robot)
+                        '#FF5722'     // Orange (Mosaed Robot)
                     ],
                     borderWidth: 0,
                     hoverOffset: 4
@@ -54,7 +54,7 @@ export default class PieChartCrowded {
                             pointStyle: 'circle',
                             padding: 10,
                             font: {
-                                size: 10,
+                                size: 14,
                                 family: "'Segoe UI', sans-serif"
                             },
                             color: '#fff',
@@ -74,11 +74,11 @@ export default class PieChartCrowded {
                         enabled: true,
                         backgroundColor: 'rgba(0, 0, 0, 0.8)',
                         titleFont: {
-                            size: 11,
+                            size: 15,
                             color: '#fff'
                         },
                         bodyFont: {
-                            size: 11,
+                            size: 15,
                             color: '#fff'
                         },
                         padding: 10,
@@ -113,7 +113,7 @@ export default class PieChartCrowded {
         const startTime = new Date(endTime - (60 * 1000)); // 60 seconds = 1 minute
 
         try {
-            const url = `http://192.168.100.219:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
+            const url = `http://192.168.8.15:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
 
             const response = await fetch(url);
 
@@ -126,11 +126,11 @@ export default class PieChartCrowded {
             
             if (data.chart_data) {
                 const chartValues = {
-                    software: data.chart_data.values[data.chart_data.labels.indexOf('software_lab')] || 0,
-                    robotics: data.chart_data.values[data.chart_data.labels.indexOf('robotics_lab')] || 0,
-                    showroom: data.chart_data.values[data.chart_data.labels.indexOf('showroom')] || 0,
-                    sales: data.chart_data.values[data.chart_data.labels.indexOf('marketing-&-sales')] || 0,
-                    industrial: data.chart_data.values[data.chart_data.labels.indexOf('industrial_robot')] || 0
+                    software: data.chart_data.values[data.chart_data.labels.indexOf('drones')] || 0,
+                    robotics: data.chart_data.values[data.chart_data.labels.indexOf('amr')] || 0,
+                    showroom: data.chart_data.values[data.chart_data.labels.indexOf('barista_robot')] || 0,
+                    sales: data.chart_data.values[data.chart_data.labels.indexOf('mosaed_robot')] || 0,
+                    industrial: data.chart_data.values[data.chart_data.labels.indexOf('humanoid_robot')] || 0
                 };
                 
                 this.updateData(chartValues);

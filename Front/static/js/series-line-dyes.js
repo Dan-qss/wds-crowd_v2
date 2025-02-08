@@ -4,8 +4,8 @@ export default class SeriesLineDays {
         this.updateInterval = null;
         this.chartInitialized = false;
         this.canvasId = 'serieslinedays';
-        this.START_HOUR = 11;
-        this.END_HOUR = 20;
+        this.START_HOUR = 12;  // 12 PM
+        this.END_HOUR = 21;    // 9 PM
         this.SLOTS_PER_HOUR = 30; // Changed to 30 for 2-minute intervals
         this.TOTAL_SLOTS = (this.END_HOUR - this.START_HOUR) * this.SLOTS_PER_HOUR;
         this.totalAvHistory = Array(this.TOTAL_SLOTS).fill(null);
@@ -128,7 +128,7 @@ export default class SeriesLineDays {
                     labels: this.generateTimeLabels(),
                     datasets: [
                         {
-                            label: '9 Feb 2025',
+                            label: '8 Feb 2025',
                             data: Array(this.TOTAL_SLOTS).fill(null),
                             borderColor: '#FF0000',
                             backgroundColor: 'rgba(255, 0, 0, 0.1)',
@@ -194,8 +194,8 @@ export default class SeriesLineDays {
                                 maxRotation: 0,
                                 autoSkip: false,
                                 callback: (value, index) => {
-                                    if (index % 30 === 0) { // Changed for 2-minute intervals
-                                        const hour = 11 + Math.floor(index / 30);
+                                    if (index % 30 === 0) {
+                                        const hour = Math.floor(index / 30) + this.START_HOUR;
                                         if (hour === 12) return '12 PM';
                                         return hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
                                     }
@@ -225,7 +225,7 @@ export default class SeriesLineDays {
 
     async fetchHistoricalData(startTime, endTime) {
         try {
-            const url = `http://192.168.100.219:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
+            const url = `http://192.168.8.15:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
 
             const response = await fetch(url);
 

@@ -27,7 +27,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class WebSocketStreamer:
-    def __init__(self, camera_ids=["1", "2", "3", "4", "5"]):
+    def __init__(self, camera_ids=["8", "9", "10", "11", "12"]):
         self.camera_ids = camera_ids
         self.connections = set()
         self.connections_lock = Lock()
@@ -155,7 +155,7 @@ class WebSocketStreamer:
             
             async with websockets.serve(
                 self.register, 
-                "192.168.100.219", 
+                "192.168.8.15", 
                 8765,
                 ping_interval=None,
                 ping_timeout=None,

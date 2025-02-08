@@ -5,7 +5,7 @@
     position: absolute;
     top: 30px; 
     left: 50px; 
-    width: 180px; 
+    width: 320px; 
     height: 240px; 
     background-color: var(--basic-color); 
     border-radius: 30%; 
@@ -19,7 +19,7 @@
     position: absolute;
     top: 33px; 
     left: 55px; 
-    width: 175px; 
+    width: 310px; 
     height: 230px;
     background-color:var(--second-layer); 
     border-radius: 30%; 
@@ -33,7 +33,7 @@
     position: absolute;
     top: 45px; 
     left: 65px; 
-    width: 150px; 
+    width: 280px; 
     height: 200px;
     background-color: var(--heavy_crowd);
     border-radius: 30% ; 
@@ -48,9 +48,9 @@
 .barns-blue{
   position: absolute;
   top: 20px; 
-  left: 250px; 
-  width: 600px; 
-  height: 100px;  
+  left: 400px; 
+  width: 900px; 
+  height: 150px;  
   background-color: var(--basic-color); 
   border-radius: 30%; 
   box-sizing: border-box;
@@ -62,9 +62,9 @@
  .barns-green{
   position: absolute;
   top: 23px; 
-  left: 240px; 
-  width: 580px; 
-  height: 95px; 
+  left: 420px; 
+  width: 830px; 
+  height: 150px; 
   background-color:var(--second-layer); 
   border-radius: 30%; 
   box-sizing: border-box;
@@ -75,10 +75,10 @@
 } 
 .barns-crowd{
   position: absolute;
-  top: 45px; 
-  left: 225px; 
-  width: 540px; 
-  height: 50px; 
+  top: 25px; 
+  left: 440px; 
+  width: 790px; 
+  height: 145px; 
   background-color:var(--moderate_crowd); 
   border-radius: 30%; 
   box-sizing: border-box;
@@ -91,9 +91,9 @@
 .Humanoid-blue{
     position: absolute;
     top: 370px; 
-    left: 250px; 
-    width: 600px; 
-    height: 200px; 
+    left: 400px; 
+    width: 730px; 
+    height: 150px;  
     background-color: var(--basic-color); 
     border-radius: 20%; 
     box-sizing: border-box;
@@ -105,9 +105,9 @@
 .Humanoid-green{
     position: absolute;
     top: 370px; 
-    left: 260px; 
-    width: 580px; 
-    height: 180px; 
+    left: 420px; 
+    width: 690px; 
+    height: 150px; 
     background-color:var(--second-layer); 
     border-radius: 20%; 
     box-sizing: border-box;
@@ -119,9 +119,9 @@
 .Humanoid_crowd{
     position: absolute;
     top: 400px; 
-    left: 265px; 
-    width: 540px; 
-    height: 140px; 
+    left: 440px; 
+  width: 650px; 
+  height: 105px; 
     background-color: var(--heavy_crowd);
     border-radius: 20%; 
     box-sizing: border-box;
@@ -135,7 +135,7 @@
   position: absolute;
   top: 310px; 
   left: 50px; 
-  width: 180px; 
+  width: 320px; 
   height: 230px;  
   background-color: var(--basic-color); 
   border-radius: 30%; 
@@ -149,7 +149,7 @@
   position: absolute;
   top:310px; 
   left: 55px; 
-  width: 175px; 
+  width: 310px; 
   height: 230px;
   background-color:var(--second-layer); 
   border-radius: 40%; 
@@ -163,7 +163,7 @@
   position: absolute;
   top: 330px; 
   left: 65px; 
-  width: 150px; 
+  width: 300px; 
   height: 200px;
   background-color:var(--no_crowd); 
   border-radius: 40%; 
@@ -185,7 +185,7 @@
   display: flex; 
   justify-content: center;
   align-items: center; 
-  width: 130px;
+  width: 230px;
   height: 35px;
   opacity: 1; 
 }
@@ -193,7 +193,7 @@
 .projectName {
   color: var(--conter);
   font-family: Poppins;
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 400;
   /* letter-spacing: -0.01em; */
   letter-spacing: 1px;
@@ -204,7 +204,7 @@
 
 .rate {
   font-family: Poppins;
-  font-size: 12px;
+  font-size: 18px;
   font-weight: 400;
   color: var(--conter);
   margin: 0;
@@ -220,7 +220,7 @@
 
 .barns-title{
   top: 20px; 
-  left: 250px; 
+  left: 450px; 
   gap: 5px;
 
 }
@@ -233,16 +233,16 @@
 
 .Humanoid-title{
   top: 370px; 
-  left: 250px; 
+  left: 450px; 
   gap: 5px;
 } 
 
 .catwalk-blue {
   position: absolute;
   top: 30px; 
-  left: 850px; 
-  width: 180px; 
-  height: 540px; 
+  left: 1250px; 
+  width: 350px; 
+  height: 500px; 
   background-color: var(--basic-color); 
   border-radius: 30%; 
   box-sizing: border-box;
@@ -253,10 +253,10 @@
 }
 .catwalk-green{
   position: absolute;
-  top: 33px; 
-  left: 860px; 
-  width: 145px; 
-  height: 510px;
+  top: 38px; 
+  left: 1260px; 
+  width: 320px; 
+  height: 490px;
   background-color:var(--second-layer); 
   border-radius: 30%; 
   box-sizing: border-box;
@@ -269,9 +269,9 @@
 .catwalk-crowd{
   position: absolute;
   top: 45px; 
-  left: 870px; 
-  width: 135px; 
-  height: 490px;
+  left: 1290px; 
+  width: 260px; 
+  height: 450px;
   background-color: var(--heavy_crowd);
   border-radius: 30% ; 
   box-sizing: border-box;
@@ -283,6 +283,6 @@
 
 .catwalk-title{
   top: 20px; 
-  left: 850px; 
+  left: 1300px; 
   gap: 5px;
 }

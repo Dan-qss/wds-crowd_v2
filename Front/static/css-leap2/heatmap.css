@@ -189,7 +189,7 @@
   box-shadow: 0px 0px 25px 15px var(--shadow-color-blue);
   transform: none;
 }
-.catwalk-green{
+/* .catwalk-green{
   position: absolute;
   top: 63px; 
   left: 1110px; 
@@ -217,7 +217,7 @@
   background-clip: padding-box;
   box-shadow: 0px 0px 25px 15px var(--heavy_crowd_shadow);
   animation: rectangular 5s infinite linear;
-} 
+}  */
 .center-projects {
   position: absolute;
   background-color: var(--body-color);

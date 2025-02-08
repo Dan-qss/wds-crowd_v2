@@ -103,13 +103,15 @@ class CameraSystemInitializer:
             print(f"Error inserting camera config: {e}")
             self.conn.rollback()
 
-    def initialize_data(self, zones, areas, cameras, ):
+    def initialize_data(self,camera_config):
         """Initialize all data in the correct order"""
         try:
             self.connect()
-            zone_mapping = self.insert_zones(zones)
-            area_mapping = self.insert_areas(areas, zone_mapping)
-            self.insert_cameras(cameras, area_mapping)
+            # zone_mapping = self.insert_zones(zones)
+            # area_mapping = self.insert_areas(areas, zone_mapping)
+            # self.insert_cameras(cameras, area_mapping)
+            self.insert_camera_config(camera_config)
+
             self.conn.commit()
             print("Data initialization completed successfully")
         except Exception as e:
@@ -120,31 +122,93 @@ class CameraSystemInitializer:
 
 # Example usage
 if __name__ == "__main__":
-    # Sample data
-    zones_data = [
-        {"name": "software_lab1"}
-    ]
-
-    areas_data = [
-        {"name": "main_area", "zone_name": "software_lab1"}
-    ]
-
-    cameras_data = [
-        {
-            "area_name": "main_area",
-            "ip": "192.168.100.208",
-            "port": "80",
-            "username": "admin",
-            "password": "QSS2030QSS",
-            "channel": "101",
-            "rtsp_url": "rtsp://admin:QSS2030QSS@192.168.100.208/Streaming/Channels/101",
-            "capacities": 9,
-            "enabled": True
-        }
-    ]
+    # # Sample data
+    # zones_data = [
+    #     {"name": "drones"},
+    #     {"name": "amr"},
+    #     {"name": "barista_robot"},
+    #     {"name": "mosaed_robot"},
+    #     {"name": "humanoid_robot"}
 
 
+
+    #     ]
+
+    # areas_data = [
+    #     {"name": "main_area", "zone_name": "drones"},
+    #     {"name": "main_area", "zone_name": "amr"},
+    #     {"name": "main_area", "zone_name": "barista_robot"},
+    #     {"name": "main_area", "zone_name": "mosaed_robot"},
+    #     {"name": "main_area", "zone_name": "humanoid_robot"}
+
+    # ]
+
+    # cameras_data = [
+    #     {
+    #         "area_name": "main_area",
+    #         "ip": "192.168.8.18",
+    #         "port": "80",
+    #         "username": "admin",
+    #         "password": "QSS2030QSS",
+    #         "channel": "101",
+    #         "rtsp_url": "rtsp://admin:QSS2030QSS@192.168.8.18/Streaming/Channels/101",
+    #         "capacities": 9,
+    #         "enabled": True
+    #     },
+    #      {
+    #         "area_name": "main_area",
+    #         "ip": "192.168.8.17",
+    #         "port": "80",
+    #         "username": "admin",
+    #         "password": "QSS2030QSS",
+    #         "channel": "101",
+    #         "rtsp_url": "rtsp://admin:QSS2030QSS@192.168.8.17/Streaming/Channels/101",
+    #         "capacities": 9,
+    #         "enabled": True
+    #     },
+    #      {
+    #         "area_name": "main_area",
+    #         "ip": "192.168.8.16",
+    #         "port": "80",
+    #         "username": "admin",
+    #         "password": "QSS2030qss@",
+    #         "channel": "101",
+    #         "rtsp_url": "rtsp://admin:QSS2030Qqss@@192.168.8.16/Streaming/Channels/101",
+    #         "capacities": 9,
+    #         "enabled": True
+    #     },
+    #      {
+    #         "area_name": "main_area",
+    #         "ip": "192.168.8.19",
+    #         "port": "80",
+    #         "username": "admin",
+    #         "password": "QSS2030qss@",
+    #         "channel": "101",
+    #         "rtsp_url": "rtsp://admin:QSS2030qss@@192.168.8.19/Streaming/Channels/101",
+    #         "capacities": 9,
+    #         "enabled": True
+    #     },
+    #      {
+    #         "area_name": "main_area",
+    #         "ip": "192.168.8.20",
+    #         "port": "80",
+    #         "username": "admin",
+    #         "password": "QSS2030qss@",
+    #         "channel": "101",
+    #         "rtsp_url": "rtsp://admin:QSS2030qss@@192.168.8.18/Streaming/Channels/101",
+    #         "capacities": 9,
+    #         "enabled": True
+    #     }
+    # ]
+
+    camera_config_data = {
+        "resize_scale": 0.5,
+        "reconnect_delay": 5,
+        "max_retries": 3,
+        "status_update_interval": 30,
+        "frame_rate": 30
+    }
 
     # Initialize the database
     initializer = CameraSystemInitializer(DB_CONFIG)
-    initializer.initialize_data(zones_data, areas_data, cameras_data)
+    initializer.initialize_data(camera_config_data)

@@ -21,10 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const visitorCounter = new VisitorCounter();
 
 
-    const wsHandler = new WebSocketHandler('ws://192.168.100.219:8765', (data) => {
+    const wsHandler = new WebSocketHandler('ws://192.168.8.15:8765', (data) => {
         cameraManager.handleFrame(data);
     });
-
+    
     // Clean up on page unload
     window.addEventListener('beforeunload', () => {
         if (pieChartManagerfm) {
