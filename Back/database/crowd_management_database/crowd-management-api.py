@@ -199,7 +199,7 @@ async def get_hourly_averages(
     return data
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8050)
+    uvicorn.run(app, host="0.0.0.0", port=8010)
     
     
     # for testing the api 

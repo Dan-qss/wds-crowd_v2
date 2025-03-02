@@ -119,6 +119,70 @@ class FaceRecognitionCRUD:
                 self.db_connector.return_connection(conn)
     
 
-face_db = FaceRecognitionCRUD()
-# face_db.delete_record("Yazan_Aldali")
+class UnknownRecognitionCRUD:
+    def __init__(self):
+        self.db_connector = DatabaseConnector.get_instance()
 
+    def insert_record(self, zone_name, camera_id, timestamp, gender, age):
+        """
+        Insert a new record into the unknown_recognition table.
+        
+        Parameters:
+        zone_name (str): Name of the zone where person was detected
+        camera_id (int): ID of the camera that captured the person
+        timestamp (datetime): Time when the person was detected
+        gender (str): Detected gender of the person
+        age (int): Estimated age of the person
+        """
+        query = """
+        INSERT INTO unknown_recognition (zone_name, camera_id, timestamp, gender, age)
+        VALUES (%s, %s, %s, %s, %s)
+        """
+        params = (zone_name, camera_id, timestamp, gender, age)
+        conn = None
+        try:
+            conn = self.db_connector.get_connection()
+            with conn.cursor() as cursor:
+                cursor.execute(query, params)
+                conn.commit()
+                logger.info(f"Unknown person record inserted successfully: {params}")
+        except Exception as e:
+            logger.error(f"Error inserting unknown person record: {e}")
+            if conn:
+                conn.rollback()
+        finally:
+            if conn:
+                self.db_connector.return_connection(conn)
+
+    def fetch_records_by_zone_gender_age(self, zone_name, gender, age, start_time, end_time):
+        """
+        Fetch unknown person records for a specific zone, gender, and age within a time window.
+        
+        Parameters:
+        zone_name (str): Name of the zone to fetch records from
+        gender (str): Gender of the person
+        age (int): Age of the person
+        start_time (datetime): Start of the time window
+        end_time (datetime): End of the time window
+        
+        Returns:
+        list: List of records matching the criteria
+        """
+        query = """
+        SELECT * FROM unknown_recognition
+        WHERE zone_name = %s AND timestamp BETWEEN %s AND %s
+        """
+        params = (zone_name, start_time, end_time)
+        conn = None
+        try:
+            conn = self.db_connector.get_connection()
+            with conn.cursor() as cursor:
+                cursor.execute(query, params)
+                records = cursor.fetchall()
+                return records
+        except Exception as e:
+            logger.error(f"Error fetching unknown person records: {e}")
+            return None
+        finally:
+            if conn:
+                self.db_connector.return_connection(conn)

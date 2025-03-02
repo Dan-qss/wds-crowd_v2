@@ -1,14 +1,13 @@
-export default class PieChart2Manager {
+export default class PieChartCrowded {
     constructor() {
         this.chart = null;
         this.updateInterval = null;
         this.initializeChart();
         this.startAutoUpdate();
-        // console.log('PieChart2Manager initialized');
     }
 
     initializeChart() {
-        const canvas = document.getElementById('pieChart2');
+        const canvas = document.getElementById('pieChart-crowded');
         if (!canvas) {
             console.error('Pie chart 2 canvas element not found');
             return;
@@ -20,14 +19,15 @@ export default class PieChart2Manager {
         this.chart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Software Lab', 'Robotics Lab', 'Showroom', 'Marketing & Sales'],
+                labels: ['Drones', 'AMR', 'Barista Robot', 'Mosaed Robot', 'Humanoid Robot'],
                 datasets: [{
-                    data: [0, 0, 0, 0],
+                    data: [0, 0, 0, 0, 0],
                     backgroundColor: [
                         '#4CAF50',    // Green
                         '#2196F3',    // Blue
                         '#FFC107',    // Yellow
-                        '#9C27B0'     // Purple
+                        '#9C27B0',    // Purple
+                        '#FF5722'     // Orange (Mosaed Robot)
                     ],
                     borderWidth: 0,
                     hoverOffset: 4
@@ -54,7 +54,7 @@ export default class PieChart2Manager {
                             pointStyle: 'circle',
                             padding: 10,
                             font: {
-                                size: 10,
+                                size: 14,
                                 family: "'Segoe UI', sans-serif"
                             },
                             color: '#fff',
@@ -74,11 +74,11 @@ export default class PieChart2Manager {
                         enabled: true,
                         backgroundColor: 'rgba(0, 0, 0, 0.8)',
                         titleFont: {
-                            size: 11,
+                            size: 15,
                             color: '#fff'
                         },
                         bodyFont: {
-                            size: 11,
+                            size: 15,
                             color: '#fff'
                         },
                         padding: 10,
@@ -111,11 +111,9 @@ export default class PieChart2Manager {
     async updateLatestData() {
         const endTime = new Date();
         const startTime = new Date(endTime - (60 * 1000)); // 60 seconds = 1 minute
-        // const startTime = new Date(endTime - (2 * 60 * 1000)); // 2 minutes ago
 
         try {
-
-            const url = `http://192.168.100.65:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
+            const url = `http://192.168.8.15:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
 
             const response = await fetch(url);
 
@@ -125,19 +123,16 @@ export default class PieChart2Manager {
             }
 
             const data = await response.json();
-            // console.log('\nReceived API Data:', JSON.stringify(data, null, 2));
             
             if (data.chart_data) {
-                // console.log('\nChart Data:', data.chart_data);
-                
                 const chartValues = {
-                    software: data.chart_data.values[data.chart_data.labels.indexOf('software_lab')] || 0,
-                    robotics: data.chart_data.values[data.chart_data.labels.indexOf('robotics_lab')] || 0,
-                    showroom: data.chart_data.values[data.chart_data.labels.indexOf('showroom')] || 0,
-                    sales: data.chart_data.values[data.chart_data.labels.indexOf('marketing-&-sales')] || 0
+                    software: data.chart_data.values[data.chart_data.labels.indexOf('drones')] || 0,
+                    robotics: data.chart_data.values[data.chart_data.labels.indexOf('amr')] || 0,
+                    showroom: data.chart_data.values[data.chart_data.labels.indexOf('barista_robot')] || 0,
+                    sales: data.chart_data.values[data.chart_data.labels.indexOf('mosaed_robot')] || 0,
+                    industrial: data.chart_data.values[data.chart_data.labels.indexOf('humanoid_robot')] || 0
                 };
                 
-                // console.log('\nTransformed Values:', chartValues);
                 this.updateData(chartValues);
             } else {
                 console.warn('Invalid or missing chart_data in response:', data);
@@ -154,7 +149,7 @@ export default class PieChart2Manager {
         // Set up interval for updates every 2 seconds
         this.updateInterval = setInterval(() => {
             this.updateLatestData();
-        }, 2000); // 2 seconds
+        }, 2000);
     }
 
     stopAutoUpdate() {
@@ -171,7 +166,8 @@ export default class PieChart2Manager {
                 data.software,
                 data.robotics,
                 data.showroom,
-                data.sales
+                data.sales,
+                data.industrial
             ];
             this.chart.update();
         }
@@ -179,7 +175,8 @@ export default class PieChart2Manager {
 
     handleWebSocketData(data) {
         if (data && data.software !== undefined && data.robotics !== undefined && 
-            data.showroom !== undefined && data.sales !== undefined) {
+            data.showroom !== undefined && data.sales !== undefined &&
+            data.industrial !== undefined) {
             this.updateData(data);
         }
     }

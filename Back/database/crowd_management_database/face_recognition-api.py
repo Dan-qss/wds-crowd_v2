@@ -29,6 +29,13 @@ class Recognition(BaseModel):
     status: str
     timestamp: datetime
 
+class unknown_recognition(BaseModel):
+    zone_name: str
+    camera_id: int  # Changed from str to int
+    gender: str
+    age: int      # Changed from str to int
+    timestamp: datetime
+
 class StatusDistribution(BaseModel):
     status: str
     count: int
@@ -42,6 +49,12 @@ class StatusStats(BaseModel):
     labels: List[str]
     values: List[float]
     absolute_values: List[int]
+
+class StatusStatsResponse(BaseModel):
+    labels: List[str]
+    values: List[float]
+    absolute_values: List[int]
+    time_range: Dict[str, str]
 
 @app.get("/")
 async def root():
@@ -111,6 +124,35 @@ async def get_status_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/status-stats/time", response_model=StatusStatsResponse)  # Removed trailing slash
+async def get_status_stats_by_time(
+    start_time: str = Query(..., description="Start time in format YYYY-MM-DD HH:MM:SS"),
+    end_time: str = Query(..., description="End time in format YYYY-MM-DD HH:MM:SS")
+):
+    """
+    Get status distribution statistics for pie chart visualization within a specific time range
+    Returns labels, percentage values, absolute counts, and the time range used
+    """
+    try:
+        # Parse datetime strings to datetime objects
+        start_dt = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+        end_dt = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
+        
+        # Validate time range
+        if end_dt <= start_dt:
+            raise HTTPException(
+                status_code=400,
+                detail="End time must be after start time"
+            )
+        
+        return face_fetcher.get_status_stats_by_time(start_dt, end_dt)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid datetime format. Use format YYYY-MM-DD HH:MM:SS"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/recognitions/last/{n}", response_model=List[Recognition])
@@ -122,6 +164,59 @@ async def get_last_n_records(
     """
     try:
         return face_fetcher.get_last_n_records(n)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/recognitions/unknown/last/{n}", response_model=List[unknown_recognition])
+async def get_last_n_records_unknown(
+    n: int = Path(..., gt=0, description="Number of last records to return")
+):
+    """
+    Get the last N unknown face recognition records
+    """
+    try:
+        return face_fetcher.get_last_n_records_unknown(n)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/gender-stats/", response_model=StatusStats)
+async def get_gender_stats():
+    """
+    Get gender distribution statistics from unknown_recognition table
+    Returns labels, percentage values, and absolute counts
+    """
+    try:
+        return face_fetcher.get_gender_stats()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/gender-stats/time", response_model=StatusStatsResponse)
+async def get_gender_stats_by_time(
+    start_time: str = Query(..., description="Start time in format YYYY-MM-DD HH:MM:SS"),
+    end_time: str = Query(..., description="End time in format YYYY-MM-DD HH:MM:SS")
+):
+    """
+    Get gender distribution statistics within a specific time range
+    Returns labels, percentage values, absolute counts, and the time range used
+    """
+    try:
+        # Parse datetime strings to datetime objects
+        start_dt = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+        end_dt = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
+        
+        # Validate time range
+        if end_dt <= start_dt:
+            raise HTTPException(
+                status_code=400,
+                detail="End time must be after start time"
+            )
+        
+        return face_fetcher.get_gender_stats_by_time(start_dt, end_dt)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid datetime format. Use format YYYY-MM-DD HH:MM:SS"
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     

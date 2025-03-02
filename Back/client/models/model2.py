@@ -10,11 +10,11 @@ import datetime
 back_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 sys.path.append(back_dir)
 from database.crowd_management_database.face_recognition import FaceRecognitionCRUD
-
+from database.crowd_management_database.face_recognition import UnknownRecognitionCRUD
 
 class Model2:
     def __init__(self):
-        self.api_url = 'http://192.168.100.65:3009/Detect_faces'
+        self.api_url = 'http://192.168.8.15:3009/Detect_faces'
         self.frame_counter = 0  # Initialize frame counter
             
     def _convert_frame_to_base64(self, frame):
@@ -78,12 +78,45 @@ class Model2:
         except Exception as e:
             print(f"Error sending data to database: {e}")
 
+    def _send_unknown_to_database(self, zone_name, camera_id, gender, age, timestamp):
+        """Send unknown face recognition data to the database if not already recorded recently."""
+        unknown_crud = UnknownRecognitionCRUD()  # Initialize the CRUD class
+
+        # Define a time window (e.g., 20 minutes) to check for duplicates
+        time_window = datetime.timedelta(minutes=20)
+        start_time = (datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S") - time_window).strftime("%Y-%m-%d %H:%M:%S")
+
+        try:
+            # Check if a similar person is already recorded in the same zone
+            existing_records = unknown_crud.fetch_records_by_zone_gender_age(
+                zone_name=zone_name,
+                gender=gender,
+                age=age,
+                start_time=start_time,
+                end_time=timestamp
+            )
+
+            if not existing_records:
+                # If no existing records, insert the new record
+                unknown_crud.insert_record(
+                    zone_name=zone_name,
+                    camera_id=camera_id,
+                    timestamp=timestamp,
+                    gender=gender,
+                    age=age
+                )
+                print(f"Unknown person data sent to database: Gender={gender}, Age={age}")
+            else:
+                print(f"Duplicate detected: {gender}, Age {age} in {zone_name} within last 20 minutes")
+        except Exception as e:
+            print(f"Error sending unknown person data: {e}")
+    
     def process(self, frame, camera_id, zone_name):
         # Increment frame counter
         self.frame_counter += 1
 
         # Skip 5 frames (process every 6th frame)
-        if self.frame_counter % 6 != 1:
+        if self.frame_counter % 10 != 1:
             return frame
 
         # Process the frame
@@ -92,10 +125,10 @@ class Model2:
             face_results = self._send_to_face_api(base64_image)
             if face_results:
                 for face in face_results:
+                    # Get the current timestamp
+                    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    
                     if face['name'] != 'unknown':
-                        # Get the current timestamp
-                        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        
                         # Prepare the data
                         data = {
                             "zone": zone_name,
@@ -103,7 +136,7 @@ class Model2:
                             "person_name": face['name'],  
                             "position": face['position'],  
                             "status": face['status'],
-                            "timestamp": current_time  # Add the timestamp to the data
+                            "timestamp": current_time
                         }  
                         print(data)
 
@@ -116,6 +149,23 @@ class Model2:
                             status=face['status'],
                             timestamp=current_time
                         )
+                    else:
+                        data = {
+                            "zone": zone_name,
+                            "camera_id": camera_id,
+                            "gender": face['gender'],
+                            "age": face['age'],
+                            "timestamp": current_time  
+                        }
+                        print(data)
+                        
+                        # Send unknown face data to database
+                        self._send_unknown_to_database(
+                            zone_name=zone_name,
+                            camera_id=camera_id,
+                            gender=face['gender'],
+                            age=face['age'],
+                            timestamp=current_time
+                        )
                    
-                       
         return frame
