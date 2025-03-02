@@ -106,7 +106,7 @@ export default class PieChartManagerfm {
         const startTime = new Date(endTime - (180 * 60 * 1000)); // Last hour of data
 
         try {
-            const url = `http://192.168.8.15:8020/gender-stats/time?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
+            const url = `http://192.168.100.65:8020/gender-stats/time?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
             const response = await fetch(url);
             
             if (!response.ok) {

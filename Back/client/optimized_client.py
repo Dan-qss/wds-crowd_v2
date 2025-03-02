@@ -48,7 +48,7 @@ class OptimizedCameraClient:
         try:
             self.camera_ids = camera_ids
             self.channel = grpc.insecure_channel(
-                '192.168.8.15:50051',
+                '192.168.100.65:50051',
                 options=[
                     ('grpc.max_send_message_length', 100 * 1024 * 1024),
                     ('grpc.max_receive_message_length', 100 * 1024 * 1024),

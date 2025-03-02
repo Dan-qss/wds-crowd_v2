@@ -76,7 +76,7 @@ export default class VisitorListManager {
         this.controller = new AbortController();
         
         try {
-            const response = await fetch('http://192.168.8.15:8020/recognitions/unknown/last/10', {
+            const response = await fetch('http://192.168.100.65:8020/recognitions/unknown/last/10', {
                 signal: this.controller.signal
             });
             

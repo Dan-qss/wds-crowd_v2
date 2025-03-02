@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const visitorCounter = new VisitorCounter();
 
 
-    const wsHandler = new WebSocketHandler('ws://192.168.8.15:8765', (data) => {
+    const wsHandler = new WebSocketHandler('ws://192.168.100.65:8765', (data) => {
         cameraManager.handleFrame(data);
     });
     

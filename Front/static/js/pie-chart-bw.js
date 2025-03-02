@@ -106,7 +106,7 @@ export default class PieChartManagerbw {
         const startTime = new Date(endTime - (180 * 60 * 1000)); // Last 3 hour of data
         
         try {
-            const url = `http://192.168.8.15:8020/status-stats/time?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
+            const url = `http://192.168.100.65:8020/status-stats/time?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
             const response = await fetch(url);
 
             if (!response.ok) {

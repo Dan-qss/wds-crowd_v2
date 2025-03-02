@@ -155,7 +155,7 @@ class WebSocketStreamer:
             
             async with websockets.serve(
                 self.register, 
-                "192.168.8.15", 
+                "192.168.100.65", 
                 8765,
                 ping_interval=None,
                 ping_timeout=None,
