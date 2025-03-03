@@ -83,15 +83,27 @@ class CameraManager {
             const compressedArray = Uint8Array.from(compressedData, c => c.charCodeAt(0));
             const decompressedArray = pako.inflate(compressedArray);
             
-           
+            // console.log(`Client received compressed data size for camera ${cameraId}: ${compressedData.length} bytes`);
+            // console.log(`Client decompressed data size for camera ${cameraId}: ${decompressedArray.length} bytes`);
+            
             const blob = new Blob([decompressedArray], { type: 'image/jpeg' });
             const imageUrl = URL.createObjectURL(blob);
             
             const img = new Image();
             img.onload = () => {
+                // console.log(`Client decoded image dimensions for camera ${cameraId}: ${img.width}x${img.height}`);
+                
+                // Store the frame in the appropriate camera object
                 this.cameras[cameraId].lastFrame = img;
+                
+                // Get canvas dimensions
+                // console.log(`Client canvas dimensions for camera ${cameraId}: ${camera.canvas.width}x${camera.canvas.height}`);
+                
+                // Only update display if this is the currently active camera
                 if (cameraId === this.currentCamera2) {
                     this.updateCanvas(camera, img);
+                    // Log final display dimensions
+                    // console.log(`Client final display dimensions for camera ${cameraId}: ${camera.canvas.width}x${camera.canvas.height}`);
                 }
                 URL.revokeObjectURL(imageUrl);
             };
@@ -104,14 +116,25 @@ class CameraManager {
             const compressedData = atob(data.frame);
             const compressedArray = Uint8Array.from(compressedData, c => c.charCodeAt(0));
             const decompressedArray = pako.inflate(compressedArray);
-        
+            
+            // console.log(`Client received compressed data size for camera ${cameraId}: ${compressedData.length} bytes`);
+            // console.log(`Client decompressed data size for camera ${cameraId}: ${decompressedArray.length} bytes`);
+            
             const blob = new Blob([decompressedArray], { type: 'image/jpeg' });
             const imageUrl = URL.createObjectURL(blob);
             
             const img = new Image();
             img.onload = () => {
+                // console.log(`Client decoded image dimensions for camera ${cameraId}: ${img.width}x${img.height}`);
                 camera.lastFrame = img;
+                
+                // Get canvas dimensions before update
+                // console.log(`Client canvas dimensions before update for camera ${cameraId}: ${camera.canvas.width}x${camera.canvas.height}`);
+                
                 this.updateCanvas(camera, img);
+                
+                // Log final display dimensions
+                // console.log(`Client final display dimensions for camera ${cameraId}: ${camera.canvas.width}x${camera.canvas.height}`);
                 URL.revokeObjectURL(imageUrl);
             };
             img.src = imageUrl;
@@ -119,40 +142,26 @@ class CameraManager {
     }
     // Modified updateCanvas to accept an image parameter
     updateCanvas(camera, img) {
-        if (!img) return;
+        // Set minimum dimensions for better visibility
+        const minWidth = 640;  // Set minimum width
+        const minHeight = 360; // Set minimum height
         
-        // Get the container dimensions
-        const container = camera.canvas.parentElement;
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
+        // Calculate scaling while maintaining aspect ratio
+        const containerAspect = camera.canvas.clientWidth / camera.canvas.clientHeight;
+        const imageAspect = img.width / img.height;
         
-        // Calculate the scaling ratio while maintaining aspect ratio
-        const scaleWidth = containerWidth / img.width;
-        const scaleHeight = containerHeight / img.height;
-        const scale = Math.min(scaleWidth, scaleHeight);
+        let drawWidth = Math.max(camera.canvas.clientWidth, minWidth);
+        let drawHeight = Math.max(camera.canvas.clientHeight, minHeight);
         
-        // Calculate new dimensions
-        const width = img.width * scale;
-        const height = img.height * scale;
+        if (containerAspect > imageAspect) {
+            drawWidth = drawHeight * imageAspect;
+        } else {
+            drawHeight = drawWidth / imageAspect;
+        }
         
-        // Update canvas size
-        camera.canvas.width = width;
-        camera.canvas.height = height;
-        
-        // Clear previous frame
-        camera.ctx.clearRect(0, 0, width, height);
-        
-        // Calculate centering
-        const x = (containerWidth - width) / 2;
-        const y = (containerHeight - height) / 2;
-        
-        // Position the canvas
-        camera.canvas.style.position = 'absolute';
-        camera.canvas.style.left = `${x}px`;
-        camera.canvas.style.top = `${y}px`;
-        
-        // Draw the image
-        camera.ctx.drawImage(img, 0, 0, width, height);
+        camera.canvas.width = drawWidth;
+        camera.canvas.height = drawHeight;
+        camera.ctx.drawImage(img, 0, 0, drawWidth, drawHeight);
     }
 
     calculateMode(arr) {
@@ -183,7 +192,10 @@ class CameraManager {
                 camera.latestAverage = average;
                 
                 const mode = this.calculateMode(camera.crowdingLevels);
-                camera.latestCrowdingMode = mode;                
+                camera.latestCrowdingMode = mode;
+                
+                // console.log(`Camera ${cameraId} - New average: ${average}%, Mode crowding level: ${mode}`);
+                
                 camera.percentages = [];
                 camera.crowdingLevels = [];
             }
