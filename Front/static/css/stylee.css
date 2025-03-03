@@ -25,7 +25,7 @@
   --moderate_crowd: #fcd53773;
   --moderate_crowdc_shadow: #fcd53773;
   --moderate_crowd_border: rgba(211, 150, 17, 0.514);
-  
+  ;
 }
 
 @keyframes circle-motion {
@@ -227,7 +227,8 @@
   width: 100% !important;
   border-radius: 10px;
   background-color: var(--body-color);
-
+  /* margin-right: 0.5rem;
+  margin-bottom: 0.5rem; */
 }
 
 .cam{

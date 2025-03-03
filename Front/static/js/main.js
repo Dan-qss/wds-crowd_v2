@@ -1,47 +1,29 @@
+// main.js
 import WebSocketHandler from './websocket-handler.js';
 import CameraManager from './camera-manager.js';
+import ChartManager from './line-chart-manager.js';
+import PieChartManager from './pie-chart-manager.js';
+import PieChart2Manager from './pie-chart2-manager.js';
 import FaceListManager from './face-list-manager.js';
-import VisitorListManager from './unknown-list-manager.js';
-import PieChartManagerfm from './pie-chart-fm.js';
-import PieChartManagerbw from './pie-chart-bw.js';
-import PieChartCrowded from './pie-chart-crowded.js';
-import SeriesLineCrowded from './series-line-crowded.js';
-import SeriesLineDays from './series-line-dyes.js';
-import VisitorCounter from './visitor-counter.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const cameraManager = new CameraManager();
+    const chartManager = new ChartManager();
+    const pieChartManager = new PieChartManager();
+    const pieChart2Manager = new PieChart2Manager(); // Now includes auto-updating
     const faceListManager = new FaceListManager();
-    const visitorManager = new VisitorListManager();
-    const pieChartManagerfm = new PieChartManagerfm();
-    const pieChartManagerbw = new PieChartManagerbw();
-    const pieChartCrowded = new PieChartCrowded();
-    const seriesLineCrowded = new SeriesLineCrowded();
-    const seriesLineDays = new SeriesLineDays();
-    const visitorCounter = new VisitorCounter();
-
-
-    const wsHandler = new WebSocketHandler('ws://192.168.100.65:8765', (data) => {
-        cameraManager.handleFrame(data);
-    });
     
+    const wsHandler = new WebSocketHandler('ws://192.168.100.52:8765', (data) => {
+        cameraManager.handleFrame(data);
+        if (data.pieChartData) {
+            pieChartManager.handleWebSocketData(data.pieChartData);
+        }
+    });
+
     // Clean up on page unload
     window.addEventListener('beforeunload', () => {
-        if (pieChartManagerfm) {
-            pieChartManagerfm.destroy();
-        }
-        if (pieChartManagerbw) {
-            pieChartManagerbw.destroy();
-        }
-        if (pieChartCrowded) {
-            pieChartCrowded.destroy();
-        }
-        if (seriesLineCrowded) {
-            seriesLineCrowded.destroy();
-        }
-        if (seriesLineDays) {
-            seriesLineDays.destroy();
+        if (pieChart2Manager) {
+            pieChart2Manager.destroy();
         }
     });
 });
-

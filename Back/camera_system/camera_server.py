@@ -36,26 +36,62 @@ class CameraServicer(camera_service_pb2_grpc.CameraServiceServicer):
             raise
 
     def StreamFrames(self, request, context):
+        camera_id = request.camera_id
         frames_sent = 0
+        consecutive_failures = 0
+        max_failures = 5
+        
+        # First check if the camera exists and is running
+        status = self.camera_manager.get_camera_status(camera_id)
+        if not status.get('running', False):
+            try:
+                # Try to start the camera if it's not running
+                self.camera_manager.start_camera(camera_id)
+                logger.info(f"Started camera {camera_id} for streaming")
+            except Exception as e:
+                logger.error(f"Failed to start camera {camera_id}: {e}")
+                context.set_details(f"Camera {camera_id} is not available")
+                context.set_code(grpc.StatusCode.UNAVAILABLE)
+                return
         
         while context.is_active():
             try:
-                frame = self.camera_manager.get_frame(request.camera_id)
+                # Get a frame with timeout handling
+                frame = None
+                retry_count = 0
+                while frame is None and retry_count < 3 and context.is_active():
+                    frame = self.camera_manager.get_frame(camera_id)
+                    if frame is None:
+                        retry_count += 1
+                        time.sleep(0.1)  # Short delay before retry
+                
                 if frame is not None:
                     _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 95])
                     height, width = frame.shape[:2]
                     frames_sent += 1
+                    consecutive_failures = 0  # Reset failure counter on success
+                    
                     yield camera_service_pb2.FrameResponse(
                         frame_data=buffer.tobytes(),
                         width=width,
                         height=height,
                         timestamp=datetime.now().isoformat()
                     )
-                    
-                time.sleep(1/30)
+                else:
+                    consecutive_failures += 1
+                    if consecutive_failures > max_failures:
+                        logger.error(f"Too many consecutive failures for camera {camera_id}, stopping stream")
+                        break
+                        
+                time.sleep(1/30)  # 30 FPS limit
+                
             except Exception as e:
-                logger.error(f"Error streaming camera {request.camera_id}: {e}")
-                break
+                logger.error(f"Error streaming camera {camera_id}: {e}")
+                consecutive_failures += 1
+                if consecutive_failures > max_failures:
+                    logger.error(f"Too many consecutive errors for camera {camera_id}, stopping stream")
+                    break
+                time.sleep(0.5)  # Longer delay after an error
 
     def GetCameraStatus(self, request, context):
         try:
@@ -64,7 +100,13 @@ class CameraServicer(camera_service_pb2_grpc.CameraServiceServicer):
         except Exception as e:
             logger.error(f"Error getting status for camera {request.camera_id}: {e}")
             context.set_code(grpc.StatusCode.INTERNAL)
-            return camera_service_pb2.StatusResponse()
+            context.set_details(f"Error getting camera status: {str(e)}")
+            return camera_service_pb2.StatusResponse(
+                running=False,
+                connected=False,
+                queue_size=0,
+                name=f"Camera {request.camera_id}"
+            )
 
 def serve():
     try:
@@ -81,8 +123,18 @@ def serve():
         )
         camera_service_pb2_grpc.add_CameraServiceServicer_to_server(CameraServicer(), server)
     
-        server.add_insecure_port('192.168.100.65:50051')
+        server.add_insecure_port('[::]:50051')
         server.start()
+        
+        print("Camera server started on port 50051")
+        
+        def handle_shutdown(signum, frame):
+            print("Shutting down camera server...")
+            server.stop(0)
+            
+        signal.signal(signal.SIGINT, handle_shutdown)
+        signal.signal(signal.SIGTERM, handle_shutdown)
+        
         server.wait_for_termination()
     except Exception as e:
         logger.error(f"Critical server error: {e}")
@@ -92,6 +144,7 @@ if __name__ == '__main__':
     try:
         serve()
     except KeyboardInterrupt:
-        pass
+        print("Server stopped by keyboard interrupt")
     except Exception as e:
         logger.error(f"Fatal server error: {e}")
+        print(f"Fatal error: {e}")

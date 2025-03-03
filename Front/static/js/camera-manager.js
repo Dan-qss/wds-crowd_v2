@@ -5,16 +5,30 @@ class CameraManager {
         this.cameraData = this.initializeCameraData();
         this.initializeCameras();
         this.setupResizeListener();
+        this.currentCamera2 = '2';
+        this.setupCameraSwitching();
     }
+
 
     initializeCameraData() {
         return {
-            '8': this.createCameraDataObject(),
-            '9': this.createCameraDataObject(),
-            '10': this.createCameraDataObject(),
-            '11': this.createCameraDataObject(),
-            '12': this.createCameraDataObject()
+            '1': this.createCameraDataObject(),
+            '2': this.createCameraDataObject(),
+            '3': this.createCameraDataObject(),
+            '4': this.createCameraDataObject(),
+            '5': this.createCameraDataObject()
         };
+    }
+
+    setupCameraSwitching() {
+        setInterval(() => {
+            this.currentCamera2 = this.currentCamera2 === '2' ? '3' : '2';
+            // If there's a last frame for the new camera, display it
+            const newCamera = this.cameras[this.currentCamera2];
+            if (newCamera && newCamera.lastFrame) {
+                this.updateCanvas(newCamera);
+            }
+        }, 5000);
     }
 
     createCameraDataObject() {
@@ -28,7 +42,7 @@ class CameraManager {
     }
 
     initializeCameras() {
-        const cameraIds = ['8', '9', '10', '11', '12'];
+        const cameraIds = ['1', '2', '3', '4', '5'];
         for (let id of cameraIds) {
             const canvas = document.getElementById(`camera${id}`);
             if (canvas) {
@@ -59,25 +73,51 @@ class CameraManager {
 
     handleCameraFrame(data) {
         const cameraId = data.camera_id;
-        const camera = this.cameras[cameraId];
-        if (!camera) return;
-
-        const compressedData = atob(data.frame);
-        const compressedArray = Uint8Array.from(compressedData, c => c.charCodeAt(0));
-        const decompressedArray = pako.inflate(compressedArray);
         
-        const blob = new Blob([decompressedArray], { type: 'image/jpeg' });
-        const imageUrl = URL.createObjectURL(blob);
+        // Special handling for cameras 2 and 5
+        if (cameraId === '2' || cameraId === '3') {
+            const camera = this.cameras['2']; // Always use camera 2's canvas
+            if (!camera) return;
+    
+            const compressedData = atob(data.frame);
+            const compressedArray = Uint8Array.from(compressedData, c => c.charCodeAt(0));
+            const decompressedArray = pako.inflate(compressedArray);
+            
+           
+            const blob = new Blob([decompressedArray], { type: 'image/jpeg' });
+            const imageUrl = URL.createObjectURL(blob);
+            
+            const img = new Image();
+            img.onload = () => {
+                this.cameras[cameraId].lastFrame = img;
+                if (cameraId === this.currentCamera2) {
+                    this.updateCanvas(camera, img);
+                }
+                URL.revokeObjectURL(imageUrl);
+            };
+            img.src = imageUrl;
+        } else {
+            // Handle other cameras normally
+            const camera = this.cameras[cameraId];
+            if (!camera) return;
+    
+            const compressedData = atob(data.frame);
+            const compressedArray = Uint8Array.from(compressedData, c => c.charCodeAt(0));
+            const decompressedArray = pako.inflate(compressedArray);
         
-        const img = new Image();
-        img.onload = () => {
-            camera.lastFrame = img;
-            this.updateCanvas(camera, img);
-            URL.revokeObjectURL(imageUrl);
-        };
-        img.src = imageUrl;
+            const blob = new Blob([decompressedArray], { type: 'image/jpeg' });
+            const imageUrl = URL.createObjectURL(blob);
+            
+            const img = new Image();
+            img.onload = () => {
+                camera.lastFrame = img;
+                this.updateCanvas(camera, img);
+                URL.revokeObjectURL(imageUrl);
+            };
+            img.src = imageUrl;
+        }
     }
-
+    // Modified updateCanvas to accept an image parameter
     updateCanvas(camera, img) {
         if (!img) return;
         
@@ -115,7 +155,6 @@ class CameraManager {
         camera.ctx.drawImage(img, 0, 0, width, height);
     }
 
-
     calculateMode(arr) {
         const frequency = {};
         let maxFrequency = 0;
@@ -144,8 +183,7 @@ class CameraManager {
                 camera.latestAverage = average;
                 
                 const mode = this.calculateMode(camera.crowdingLevels);
-                camera.latestCrowdingMode = mode;
-                
+                camera.latestCrowdingMode = mode;                
                 camera.percentages = [];
                 camera.crowdingLevels = [];
             }
@@ -169,25 +207,30 @@ class CameraManager {
         const stats = this.calculateAverageAndMode(data.camera_id, percentage, crowdingLevel);
 
         switch(data.camera_id) {
-            case '8':
-                elementId = 'Drons_crowd';
-                percentageId = 'Drons-per';
+            case '1':
+                elementId = 'software_crowd';
+                percentageId = 'software-per';
                 break;
-            case '9':
-                elementId = 'amr-crowd';
-                percentageId = 'amr-per';
+
+            case '2':
+                elementId = 'Robotics_lab-crowd';
+                percentageId = 'Robotics_lab-per';
                 break;
-            case '10':
-                elementId = 'barns-crowd';
-                percentageId = 'barns-per';
+
+            case '4':
+                elementId = 'show_room_crowd';
+                percentageId = 'show-room-per';
                 break;
-            case '11':
-                elementId = 'catwalk-crowd';
-                percentageId = 'catwalk-per';
+           
+            case '3':
+                // console.log('Camera 3');
+                // elementId = 'show_room_crowd';
+                // percentageId = 'show-room-per';
                 break;
-            case '12':
-                elementId = 'Humanoid_crowd';
-                percentageId = 'Humanoid-per';
+            case '5':
+                // console.log('Camera 5');
+                elementId = 'lobby-crowd';
+                percentageId = 'lobby-per';
                 break;
             default:
                 console.warn('Unknown camera_id:', data.camera_id);

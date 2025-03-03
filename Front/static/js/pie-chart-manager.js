@@ -1,40 +1,28 @@
-export default class PieChartManagerfm {
+export default class PieChartManager {
     constructor() {
         this.chart = null;
-        this.updateInterval = null;
         this.initializeChart();
         this.startDataFetching();
     }
 
-    formatDateTime(date) {
-        const pad = (num) => String(num).padStart(2, '0');
-        
-        const year = date.getFullYear();
-        const month = pad(date.getMonth() + 1);
-        const day = pad(date.getDate());
-        const hours = pad(date.getHours());
-        const minutes = pad(date.getMinutes());
-        const seconds = pad(date.getSeconds());
-
-        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    }
-
     initializeChart() {
-        const canvas = document.getElementById('pieChart-fm');
+        const canvas = document.getElementById('pieChart');
         if (!canvas) {
             console.error('Pie chart canvas element not found');
             return;
         }
+
         const ctx = canvas.getContext('2d');
+
         this.chart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Male', 'Female'],
+                labels: ['Blacklist', 'Whitelist'],
                 datasets: [{
                     data: [0, 0],
                     backgroundColor: [
-                        'rgba(123, 187, 218, 0.8)',
-                        'rgba(224, 101, 218, 0.8)'
+                        'rgba(255, 82, 82, 0.8)',  // Red color for blacklist
+                        'rgba(76, 175, 80, 0.8)'   // Green color for whitelist
                     ],
                     borderWidth: 0,
                     hoverOffset: 4
@@ -48,7 +36,7 @@ export default class PieChartManagerfm {
                     padding: {
                         left: 15,
                         right: 15,
-                        top: -10,
+                        top: 5,
                         bottom: 5
                     }
                 },
@@ -61,16 +49,15 @@ export default class PieChartManagerfm {
                             pointStyle: 'circle',
                             padding: 15,
                             font: {
-                                size: 15,
+                                size: 10,
                                 family: "'Segoe UI', sans-serif"
                             },
                             color: '#fff',
-                            generateLabels: (chart) => {
+                            generateLabels: function(chart) {
                                 const data = chart.data;
-                                const dataset = data.datasets[0];
                                 return data.labels.map((label, i) => ({
-                                    text: `${label} (${dataset.data[i]}%)`,
-                                    fillStyle: dataset.backgroundColor[i],
+                                    text: `${label} ${data.datasets[0].data[i]}%`,
+                                    fillStyle: data.datasets[0].backgroundColor[i],
                                     hidden: false,
                                     index: i,
                                     fontColor: '#fff'
@@ -82,19 +69,21 @@ export default class PieChartManagerfm {
                         enabled: true,
                         backgroundColor: 'rgba(0, 0, 0, 0.8)',
                         titleFont: {
-                            size: 15
+                            size: 11,
+                            color: '#fff'
                         },
                         bodyFont: {
-                            size: 15
+                            size: 11,
+                            color: '#fff'
                         },
                         padding: 10,
                         callbacks: {
-                            label: (context) => {
-                                const value = context.parsed;
-                                const absoluteValue = this.chart.data.absoluteValues[context.dataIndex];
-                                return `${context.label}: ${value}% (${absoluteValue} people)`;
+                            label: function(context) {
+                                return `${context.label}: ${context.parsed}%`;
                             }
-                        }
+                        },
+                        titleColor: '#fff',
+                        bodyColor: '#fff'
                     }
                 }
             }
@@ -102,32 +91,33 @@ export default class PieChartManagerfm {
     }
 
     async fetchData() {
-        const endTime = new Date();
-        const startTime = new Date(endTime - (180 * 60 * 1000)); // Last hour of data
-
         try {
-            const url = `http://192.168.100.65:8020/gender-stats/time?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
-            const response = await fetch(url);
-            
+            const response = await fetch('http://192.168.100.52:8020/status-stats/');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
             
-            // Store absolute values for tooltip
-            this.chart.data.absoluteValues = data.absolute_values;
+            // Convert the API response to the format our chart expects
+            const blackIndex = data.labels.indexOf('black');
+            const whiteIndex = data.labels.indexOf('white');
             
-            // Update chart data
-            this.chart.data.datasets[0].data = data.values;
-            
-            // Ensure labels match the API response
-            this.chart.data.labels = data.labels.map(label => 
-                label.charAt(0).toUpperCase() + label.slice(1).toLowerCase()
-            );
-            
-            this.chart.update();
+            this.updateData({
+                blacklist: data.values[blackIndex],
+                whitelist: data.values[whiteIndex]
+            });
         } catch (error) {
-            console.error('Error fetching gender distribution data:', error);
+            console.error('Error fetching data:', error);
+        }
+    }
+
+    updateData(data) {
+        if (this.chart) {
+            this.chart.data.datasets[0].data = [
+                data.blacklist,
+                data.whitelist
+            ];
+            this.chart.update();
         }
     }
 
@@ -136,19 +126,8 @@ export default class PieChartManagerfm {
         this.fetchData();
         
         // Set up interval for updates every 5 seconds
-        this.updateInterval = setInterval(() => {
+        setInterval(() => {
             this.fetchData();
         }, 5000);
-    }
-
-    destroy() {
-        // Clean up resources
-        if (this.updateInterval) {
-            clearInterval(this.updateInterval);
-        }
-        if (this.chart) {
-            this.chart.destroy();
-            this.chart = null;
-        }
     }
 }

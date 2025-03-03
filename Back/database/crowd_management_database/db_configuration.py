@@ -2,7 +2,7 @@ db_config = {
     'host': 'localhost',
     'database': 'crowd_management',
     'user': 'postgres',
-    'password': 'QSS2030qss@',
+    'password': '1998',
     'port': 5432,
     
 }

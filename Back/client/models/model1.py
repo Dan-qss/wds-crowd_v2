@@ -2,6 +2,7 @@ import torch
 import logging
 from ultralytics import YOLO
 import cv2
+from roi import get_roi, draw_roi_on_frame
 import numpy as np
 from collections import defaultdict
 from datetime import datetime
@@ -59,6 +60,15 @@ class Model1:
             }
             
             self.camera_counts = {str(cam['camera_id']): 0 for cam in enabled_cameras}
+            
+            self.roi_cache = {}
+            for camera_id in self.camera_counts.keys():
+                roi = get_roi(camera_id)
+                if roi and len(roi) > 2:
+                    self.roi_cache[camera_id] = np.array(roi, dtype=np.int32).reshape((-1, 1, 2))
+                else:
+                    self.roi_cache[camera_id] = None
+            
             self.current_minute_data = defaultdict(list)
             self.current_minute = self._get_current_minute()
         except Exception as e:
@@ -75,14 +85,27 @@ class Model1:
     def process(self, frame, camera_id, capacity):
         try:
             with torch.inference_mode():
+                roi_np = self.roi_cache.get(camera_id)
+                
                 results = self.model(frame, conf=0.30, verbose=False, classes=[0], device=0)
                 
                 current_count = 0
                 boxes = results[0].boxes
                 for box in boxes:
                     x1, y1, x2, y2 = map(int, box.xyxy[0])
-                    current_count += 1
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    center_x = int((x1 + x2) / 2)
+                    center_y = int((y1 + y2) / 2)
+                    
+                    if roi_np is not None and cv2.pointPolygonTest(roi_np, (center_x, center_y), False) >= 0:
+                        color = (0, 0, 255)
+                        current_count += 1
+                    else:
+                        color = (0, 255, 0)
+                    
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+
+                if roi_np is not None:
+                    frame = draw_roi_on_frame(frame, roi_np.reshape(-1, 2).tolist())
 
                 self.camera_counts[camera_id] = current_count
 
@@ -175,6 +198,7 @@ class Model1:
         except Exception as e:
             logger.error(f"Error calculating crowding rate: {e}")
             return "Unknown", 0
+
     def send_to_database(self, measurements: List[Dict[str, Any]]):
         try:
             crowd_db = CrowdMeasurements()
