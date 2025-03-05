@@ -1,0 +1,34 @@
+version: '3'
+
+services:
+  crowd-management:
+    build: .
+    ports:
+      - "8010:8010"  # Crowd management API
+      - "8020:8020"  # Face recognition API
+      - "80:80"      # Frontend
+    volumes:
+      - ./Back/logs:/app/Back/logs
+      # Add more volume mounts if needed for data persistence
+    restart: unless-stopped
+    # Add environment variables if needed
+    # environment:
+    #   - DB_HOST=db
+    #   - DB_USER=user
+    #   - DB_PASSWORD=password
+
+  # If you have a database service, uncomment and configure this section
+  # db:
+  #   image: postgres:13
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_USER=user
+  #     - POSTGRES_PASSWORD=password
+  #     - POSTGRES_DB=crowd_management
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5432:5432"
+
+# volumes:
+#   postgres_data:

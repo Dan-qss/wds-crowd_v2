@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pieChart2Manager = new PieChart2Manager(); // Now includes auto-updating
     const faceListManager = new FaceListManager();
     
-    const wsHandler = new WebSocketHandler('ws://192.168.100.52:8765', (data) => {
+    const wsHandler = new WebSocketHandler('ws://127.0.0.1:8765', (data) => {
         cameraManager.handleFrame(data);
         if (data.pieChartData) {
             pieChartManager.handleWebSocketData(data.pieChartData);
