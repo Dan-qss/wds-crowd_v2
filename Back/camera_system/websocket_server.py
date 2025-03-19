@@ -114,9 +114,12 @@ class WebSocketStreamer:
                 self.connections.discard(websocket)
                 print(f"Client {client_ip} removed from connections. Active connections: {len(self.connections)}")
 
+    # Modify the broadcast_frames method in WebSocketStreamer to handle reconnection better
     async def broadcast_frames(self):
         frame_count = {cam_id: 0 for cam_id in self.camera_ids}
         last_log_time = time.time()
+        last_camera_check = {cam_id: 0 for cam_id in self.camera_ids}
+        camera_check_interval = 15  # Check camera status every 15 seconds
         
         while self.running:
             try:
@@ -129,8 +132,9 @@ class WebSocketStreamer:
                     frame_count = {cam_id: 0 for cam_id in self.camera_ids}
                     last_log_time = current_time
                 
-                # Check for stale frames (cameras that haven't updated recently)
+                # Check for stale frames and attempt proactive health checks
                 for camera_id in self.camera_ids:
+                    # Check if camera hasn't updated recently
                     if current_time - self.camera_last_update[camera_id] > self.max_frame_age:
                         if self.camera_available[camera_id]:
                             logger.warning(f"Camera {camera_id} hasn't updated for {self.max_frame_age} seconds, marking as unavailable")
@@ -143,11 +147,18 @@ class WebSocketStreamer:
                                     message = json.dumps({
                                         'type': 'camera_status',
                                         'camera_id': camera_id,
-                                        'available': False
+                                        'available': False,
+                                        'message': 'Camera connection lost'
                                     })
                                     await self.broadcast_message(message)
                                 except Exception as e:
                                     logger.error(f"Error sending camera unavailability: {str(e)}")
+                    
+                    # Periodically check if unavailable cameras have come back online
+                    # This is only for monitoring - actual reconnection is handled by CameraManager
+                    if not self.camera_available[camera_id] and current_time - last_camera_check[camera_id] > camera_check_interval:
+                        last_camera_check[camera_id] = current_time
+                        print(f"[Health Check] Camera {camera_id} still unavailable, waiting for frames...")
                 
                 # Skip broadcasting if no connections
                 if len(self.connections) == 0:
@@ -167,17 +178,21 @@ class WebSocketStreamer:
                             if frame is None:
                                 continue
                             
-                            # Mark camera as available if we got a frame
+                            # Mark camera as available if we got a frame and it was previously unavailable
                             if not self.camera_available[camera_id]:
-                                print(f"Camera {camera_id} is now available")
+                                print(f"Camera {camera_id} is now available again")
                                 self.camera_available[camera_id] = True
                                 # Notify clients
                                 message = json.dumps({
                                     'type': 'camera_status',
                                     'camera_id': camera_id,
-                                    'available': True
+                                    'available': True,
+                                    'message': 'Camera reconnected'
                                 })
                                 await self.broadcast_message(message)
+                                
+                                # Reset last check time
+                                last_camera_check[camera_id] = current_time
 
                             # Get frame dimensions
                             height, width = frame.shape[:2]

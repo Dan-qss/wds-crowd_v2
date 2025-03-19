@@ -73,7 +73,6 @@ class CameraManager {
 
     handleCameraFrame(data) {
         const cameraId = data.camera_id;
-        
         // Special handling for cameras 2 and 5
         if (cameraId === '2' || cameraId === '3') {
             const camera = this.cameras['2']; // Always use camera 2's canvas
@@ -83,27 +82,16 @@ class CameraManager {
             const compressedArray = Uint8Array.from(compressedData, c => c.charCodeAt(0));
             const decompressedArray = pako.inflate(compressedArray);
             
-            // console.log(`Client received compressed data size for camera ${cameraId}: ${compressedData.length} bytes`);
-            // console.log(`Client decompressed data size for camera ${cameraId}: ${decompressedArray.length} bytes`);
-            
             const blob = new Blob([decompressedArray], { type: 'image/jpeg' });
             const imageUrl = URL.createObjectURL(blob);
             
             const img = new Image();
             img.onload = () => {
-                // console.log(`Client decoded image dimensions for camera ${cameraId}: ${img.width}x${img.height}`);
-                
                 // Store the frame in the appropriate camera object
                 this.cameras[cameraId].lastFrame = img;
-                
-                // Get canvas dimensions
-                // console.log(`Client canvas dimensions for camera ${cameraId}: ${camera.canvas.width}x${camera.canvas.height}`);
-                
                 // Only update display if this is the currently active camera
                 if (cameraId === this.currentCamera2) {
                     this.updateCanvas(camera, img);
-                    // Log final display dimensions
-                    // console.log(`Client final display dimensions for camera ${cameraId}: ${camera.canvas.width}x${camera.canvas.height}`);
                 }
                 URL.revokeObjectURL(imageUrl);
             };
@@ -116,10 +104,6 @@ class CameraManager {
             const compressedData = atob(data.frame);
             const compressedArray = Uint8Array.from(compressedData, c => c.charCodeAt(0));
             const decompressedArray = pako.inflate(compressedArray);
-            
-            // console.log(`Client received compressed data size for camera ${cameraId}: ${compressedData.length} bytes`);
-            // console.log(`Client decompressed data size for camera ${cameraId}: ${decompressedArray.length} bytes`);
-            
             const blob = new Blob([decompressedArray], { type: 'image/jpeg' });
             const imageUrl = URL.createObjectURL(blob);
             
@@ -127,20 +111,15 @@ class CameraManager {
             img.onload = () => {
                 // console.log(`Client decoded image dimensions for camera ${cameraId}: ${img.width}x${img.height}`);
                 camera.lastFrame = img;
-                
-                // Get canvas dimensions before update
-                // console.log(`Client canvas dimensions before update for camera ${cameraId}: ${camera.canvas.width}x${camera.canvas.height}`);
-                
                 this.updateCanvas(camera, img);
-                
+            
                 // Log final display dimensions
-                // console.log(`Client final display dimensions for camera ${cameraId}: ${camera.canvas.width}x${camera.canvas.height}`);
                 URL.revokeObjectURL(imageUrl);
             };
             img.src = imageUrl;
         }
     }
-    // Modified updateCanvas to accept an image parameter
+
     updateCanvas(camera, img) {
         // Set minimum dimensions for better visibility
         const minWidth = 640;  // Set minimum width
@@ -300,6 +279,68 @@ class CameraManager {
                 element.style.color = '#FFFFFF';
         }
     }
+
+    // Add these methods to your camera-manager.js file
+
+/**
+ * Creates a "No Stream" image to display when camera is offline
+ * @param {number} width - Canvas width 
+ * @param {number} height - Canvas height
+ * @returns {HTMLImageElement} - Image with "No Stream" message
+ */
+createNoStreamImage(width, height) {
+    // Create an off-screen canvas to generate the "No Stream" image
+    const canvas = document.createElement('canvas');
+    canvas.width = width || 640;
+    canvas.height = height || 360;
+    const ctx = canvas.getContext('2d');
+    
+    // Draw black background
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw "No Stream" text
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 30px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('No Stream', canvas.width / 2, canvas.height / 2);
+    
+    // Convert canvas to image
+    const img = new Image();
+    img.src = canvas.toDataURL('image/png');
+    return img;
+}
+
+/**
+ * Displays a "No Stream" message on the specified camera canvas
+ * @param {string} cameraId - The ID of the camera
+ */
+showNoStreamMessage(cameraId) {
+    let camera;
+    
+    // Special handling for cameras 2 and 3
+    if (cameraId === '2' || cameraId === '3') {
+        camera = this.cameras['2']; // Always use camera 2's canvas
+    } else {
+        camera = this.cameras[cameraId];
+    }
+    
+    if (!camera || !camera.canvas || !camera.ctx) {
+        console.error(`Cannot display "No Stream" message: invalid camera ${cameraId}`);
+        return;
+    }
+    
+    // Get canvas dimensions
+    const width = camera.canvas.width || 640;
+    const height = camera.canvas.height || 360;
+    
+    // Create and display the "No Stream" image
+    const noStreamImg = this.createNoStreamImage(width, height);
+    noStreamImg.onload = () => {
+        camera.ctx.drawImage(noStreamImg, 0, 0, width, height);
+    };
+}
 }
 
 export default CameraManager;
