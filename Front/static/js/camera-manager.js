@@ -7,8 +7,120 @@ class CameraManager {
         this.setupResizeListener();
         this.currentCamera2 = '2';
         this.setupCameraSwitching();
+        
+        // Add frame monitoring
+        this.lastFrameTimestamps = {
+            '1': Date.now(),
+            '2': Date.now(),
+            '3': Date.now(),
+            '4': Date.now(),
+            '5': Date.now()
+        };
+        this.cameraMonitoringInterval = 5000; // Check every 10 seconds
+        this.frameTimeoutThreshold = 10000; // Consider camera down after 15 seconds without frames
+        this.startCameraMonitoring();
     }
 
+    // Start the camera monitoring system
+    startCameraMonitoring() {
+        setInterval(() => {
+            const now = Date.now();
+            for (const cameraId in this.lastFrameTimestamps) {
+                const timeSinceLastFrame = now - this.lastFrameTimestamps[cameraId];
+                if (timeSinceLastFrame > this.frameTimeoutThreshold) {
+                    console.log(`Camera id ${cameraId} no frames for ${Math.round(timeSinceLastFrame/1000)}s`);
+                    
+                    // Update UI to show camera is offline
+                    this.updateCameraOfflineStatus(cameraId, true);
+                    
+                    // Directly show "NO STREAM" on canvas
+                    this.showNoStreamMessage(cameraId);
+                } else if (timeSinceLastFrame > this.cameraMonitoringInterval) {
+                    // Warning level - frames are delayed but not completely stopped
+                    console.log(`Camera id ${cameraId} frames delayed for ${Math.round(timeSinceLastFrame/1000)}s`);
+                }
+            }
+        }, this.cameraMonitoringInterval);
+    }
+    
+    // Update UI to show camera offline status
+    updateCameraOfflineStatus(cameraId, isOffline) {
+        // Find the camera container or status element
+        let cameraElement;
+        switch(cameraId) {
+            case '1':
+                cameraElement = document.getElementById('software_crowd');
+                break;
+            case '2':
+            case '3':
+                cameraElement = document.getElementById('Robotics_lab-crowd');
+                break;
+            case '4':
+                cameraElement = document.getElementById('show_room_crowd');
+                break;
+            case '5':
+                cameraElement = document.getElementById('lobby-crowd');
+                break;
+        }
+        
+        if (cameraElement) {
+            if (isOffline) {
+                // Add offline indicator
+                cameraElement.classList.add('camera-offline');
+                
+                // Find the percentage element and update text
+                const percentId = cameraElement.id.replace('-crowd', '-per');
+                const percentElement = document.getElementById(percentId);
+                if (percentElement) {
+                    percentElement.textContent = 'Offline';
+                    percentElement.style.color = '#FF0000';
+                }
+                
+                // Show "NO STREAM" text on the canvas
+                this.showNoStreamMessage(cameraId);
+            } else {
+                // Remove offline indicator
+                cameraElement.classList.remove('camera-offline');
+            }
+        }
+    }
+    
+    showNoStreamMessage(cameraId) {
+        // For cameras 2 and 3, we need to use camera canvas '2'
+        const displayCameraId = (cameraId === '2' || cameraId === '3') ? '2' : cameraId;
+        const camera = this.cameras[displayCameraId];
+        
+        if (camera && camera.canvas && camera.ctx) {
+            // Clear the canvas
+            camera.ctx.clearRect(0, 0, camera.canvas.width, camera.canvas.height);
+            
+            // Set canvas dimensions if not already set
+            if (camera.canvas.width === 0) camera.canvas.width = 640;
+            if (camera.canvas.height === 0) camera.canvas.height = 360;
+            
+            // Fill canvas with dark background
+            camera.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            camera.ctx.fillRect(0, 0, camera.canvas.width, camera.canvas.height);
+            
+            // Draw text "NO STREAM"
+            camera.ctx.font = 'bold 36px Arial';
+            camera.ctx.textAlign = 'center';
+            camera.ctx.textBaseline = 'middle';
+            
+            // Text shadow for better visibility
+            camera.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            camera.ctx.fillText('NO STREAM', camera.canvas.width / 2 + 2, camera.canvas.height / 2 + 2);
+            
+            // Main text in red
+            camera.ctx.fillStyle = '#FF0000';
+            camera.ctx.fillText('NO STREAM', camera.canvas.width / 2, camera.canvas.height / 2);
+            
+            // Additional info text
+            camera.ctx.font = '16px Arial';
+            camera.ctx.fillStyle = '#FFFFFF';
+            camera.ctx.fillText(`Camera ${cameraId} offline`, camera.canvas.width / 2, camera.canvas.height / 2 + 40);
+        }
+    }
 
     initializeCameraData() {
         return {
@@ -67,6 +179,10 @@ class CameraManager {
     }
 
     handleFrame(data) {
+        // Update timestamp when a frame is received
+        const cameraId = data.camera_id;
+        this.lastFrameTimestamps[cameraId] = Date.now();
+        
         this.updateHeatMap(data);
         this.handleCameraFrame(data);
     }
@@ -279,68 +395,6 @@ class CameraManager {
                 element.style.color = '#FFFFFF';
         }
     }
-
-    // Add these methods to your camera-manager.js file
-
-/**
- * Creates a "No Stream" image to display when camera is offline
- * @param {number} width - Canvas width 
- * @param {number} height - Canvas height
- * @returns {HTMLImageElement} - Image with "No Stream" message
- */
-createNoStreamImage(width, height) {
-    // Create an off-screen canvas to generate the "No Stream" image
-    const canvas = document.createElement('canvas');
-    canvas.width = width || 640;
-    canvas.height = height || 360;
-    const ctx = canvas.getContext('2d');
-    
-    // Draw black background
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw "No Stream" text
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 30px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('No Stream', canvas.width / 2, canvas.height / 2);
-    
-    // Convert canvas to image
-    const img = new Image();
-    img.src = canvas.toDataURL('image/png');
-    return img;
-}
-
-/**
- * Displays a "No Stream" message on the specified camera canvas
- * @param {string} cameraId - The ID of the camera
- */
-showNoStreamMessage(cameraId) {
-    let camera;
-    
-    // Special handling for cameras 2 and 3
-    if (cameraId === '2' || cameraId === '3') {
-        camera = this.cameras['2']; // Always use camera 2's canvas
-    } else {
-        camera = this.cameras[cameraId];
-    }
-    
-    if (!camera || !camera.canvas || !camera.ctx) {
-        console.error(`Cannot display "No Stream" message: invalid camera ${cameraId}`);
-        return;
-    }
-    
-    // Get canvas dimensions
-    const width = camera.canvas.width || 640;
-    const height = camera.canvas.height || 360;
-    
-    // Create and display the "No Stream" image
-    const noStreamImg = this.createNoStreamImage(width, height);
-    noStreamImg.onload = () => {
-        camera.ctx.drawImage(noStreamImg, 0, 0, width, height);
-    };
-}
 }
 
 export default CameraManager;
