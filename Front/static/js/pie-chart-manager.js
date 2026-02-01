@@ -92,7 +92,7 @@ export default class PieChartManager {
 
     async fetchData() {
         try {
-            const response = await fetch('http:/127.0.0.1:8020/status-stats/');
+            const response = await fetch('http://192.168.100.65:8020/status-stats/');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }

@@ -72,7 +72,7 @@ export default class FaceListManager {
         this.controller = new AbortController();
         
         try {
-            const response = await fetch('http://127.0.0.1:8020/recognitions/last/3', {
+            const response = await fetch('http://192.168.100.65:8020/recognitions/last/5', {
                 signal: this.controller.signal
             });
             

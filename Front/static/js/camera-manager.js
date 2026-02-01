@@ -16,9 +16,13 @@ class CameraManager {
             '4': Date.now(),
             '5': Date.now()
         };
-        this.cameraMonitoringInterval = 5000; // Check every 10 seconds
-        this.frameTimeoutThreshold = 10000; // Consider camera down after 15 seconds without frames
+        this.cameraMonitoringInterval = 5000; // Check every 5 seconds
+        this.frameTimeoutThreshold = 10000;   // Consider camera down after 10 seconds without frames
         this.startCameraMonitoring();
+
+        // ---- NEW: page reload control ----
+        this.pageReloadScheduled = false;
+        this.pageReloadDelay = 15000; // reload 15s after detecting offline
     }
 
     // Start the camera monitoring system
@@ -63,31 +67,14 @@ class CameraManager {
                 break;
         }
         
-        if (cameraElement) {
-            if (isOffline) {
-                // Add offline indicator
-                cameraElement.classList.add('camera-offline');
-                
-                // Find the percentage element and update text
-                const percentId = cameraElement.id.replace('-crowd', '-per');
-                const percentElement = document.getElementById(percentId);
-                if (percentElement) {
-                    percentElement.textContent = 'Offline';
-                    percentElement.style.color = '#FF0000';
-                }
-                
-                // Show "NO STREAM" text on the canvas
-                this.showNoStreamMessage(cameraId);
-            } else {
-                // Remove offline indicator
-                cameraElement.classList.remove('camera-offline');
-            }
-        }
+
     }
+
     
     showNoStreamMessage(cameraId) {
         // For cameras 2 and 3, we need to use camera canvas '2'
         const displayCameraId = (cameraId === '2' || cameraId === '3') ? '2' : cameraId;
+
         const camera = this.cameras[displayCameraId];
         
         if (camera && camera.canvas && camera.ctx) {
@@ -135,6 +122,7 @@ class CameraManager {
     setupCameraSwitching() {
         setInterval(() => {
             this.currentCamera2 = this.currentCamera2 === '2' ? '3' : '2';
+
             // If there's a last frame for the new camera, display it
             const newCamera = this.cameras[this.currentCamera2];
             if (newCamera && newCamera.lastFrame) {
@@ -182,6 +170,9 @@ class CameraManager {
         // Update timestamp when a frame is received
         const cameraId = data.camera_id;
         this.lastFrameTimestamps[cameraId] = Date.now();
+
+        // NEW: camera is clearly online now
+        this.updateCameraOfflineStatus(cameraId, false);
         
         this.updateHeatMap(data);
         this.handleCameraFrame(data);

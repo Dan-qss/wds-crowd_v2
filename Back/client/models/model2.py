@@ -14,7 +14,8 @@ from database.crowd_management_database.face_recognition import FaceRecognitionC
 
 class Model2:
     def __init__(self):
-        self.api_url = 'http://192.168.100.65:3009/Detect_faces'
+        # self.api_url = 'http://192.168.100.65:3009/Detect_faces'
+        self.api_url = 'http://192.168.100.65:3020/detect_faces'
         self.frame_counter = 0  # Initialize frame counter
             
     def _convert_frame_to_base64(self, frame):

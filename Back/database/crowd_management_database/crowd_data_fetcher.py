@@ -170,158 +170,150 @@ class CrowdDataFetcher:
                     WHERE measured_at BETWEEN %s::timestamp AND %s::timestamp
                     ORDER BY measured_at ASC
                 """
-                
                 cur.execute(query, (start_time, end_time))
-                
-                columns = ['camera_id','zone_name', 'number_of_people', 'crowding_level', 'crowding_percentage']
+
+                columns = ['camera_id', 'zone_name', 'number_of_people', 'crowding_level', 'crowding_percentage']
                 results = [dict(zip(columns, row)) for row in cur.fetchall()]
-                
-                summary = {
+
+                return {
                     'total_records': len(results),
-                    'time_range': {
-                        'start': start_time,
-                        'end': end_time
-                    },
+                    'time_range': {'start_time': start_time, 'end_time': end_time},
                     'data': results
                 }
-                
-                return summary
-                
+
         except Exception as e:
             logger.error(f"Error fetching data by time range: {str(e)}")
-            return None
+            # ✅ Return empty 200-style response, not None
+            return {
+                'total_records': 0,
+                'time_range': {'start_time': start_time, 'end_time': end_time},
+                'data': []
+            }
         finally:
             if conn:
                 self.db.return_connection(conn)
 
-    def get_occupancy_percentages_by_zone(self, start_time: str, end_time: str) -> Dict:
+
+    # Add this method to your CrowdDataFetcher class
+    def get_occupancy_percentages_by_zone(self, start_time: str, end_time: str, table_name: Optional[str] = None) -> Dict:
+        """
+        Get occupancy percentages aggregated by zones from a specific table
+        
+        Args:
+            start_time: Start time string
+            end_time: End time string  
+            table_name: Optional specific table name (e.g., 'crowd_data_01_2025')
+        """
         conn = None
         try:
             conn = self.db.get_connection()
             with conn.cursor() as cur:
-                # Modified query to include camera capacities
-                query = """
-                    WITH CameraOccupancy AS (
-                        SELECT 
-                            cm.camera_id,
-                            cm.zone_name,
-                            AVG(cm.number_of_people) as avg_people,
-                            cm.capacity,
-                            COUNT(*) as measurement_count,
-                            AVG(cm.crowding_percentage) as individual_percentage
-                        FROM crowd_measurements cm
-                        WHERE cm.measured_at BETWEEN %s::timestamp AND %s::timestamp
-                        GROUP BY cm.camera_id, cm.zone_name, cm.capacity
-                    ),
-                    ZoneTotals AS (
-                        SELECT 
-                            zone_name,
-                            SUM(avg_people) as zone_total_people,
-                            SUM(capacity) as zone_total_capacity,
-                            (SUM(avg_people) * 100.0 / SUM(capacity)) as zone_percentage
-                        FROM CameraOccupancy
-                        GROUP BY zone_name
-                    )
+                table_to_query = table_name if table_name else "crowd_measurements"
+
+                query = f"""
                     SELECT 
-                        co.camera_id,
-                        co.zone_name,
-                        co.avg_people,
-                        co.capacity,
-                        co.individual_percentage,
-                        co.measurement_count,
-                        zt.zone_total_people,
-                        zt.zone_total_capacity,
-                        zt.zone_percentage
-                    FROM CameraOccupancy co
-                    JOIN ZoneTotals zt ON co.zone_name = zt.zone_name
-                    ORDER BY zt.zone_percentage DESC, co.zone_name, co.camera_id
+                        zone_name,
+                        area_name,
+                        camera_id,
+                        AVG(number_of_people) as avg_people,
+                        AVG(crowding_percentage) as avg_percentage,
+                        AVG(capacity) as avg_capacity,
+                        COUNT(*) as measurement_count
+                    FROM {table_to_query}
+                    WHERE measured_at BETWEEN %s AND %s
+                    GROUP BY zone_name, area_name, camera_id
+                    ORDER BY zone_name, area_name
                 """
-                
+
                 cur.execute(query, (start_time, end_time))
-                rows = cur.fetchall()
-                
-                # Process data
-                camera_data = []
+                results = cur.fetchall()
+
+                # ✅ Empty DB / empty range -> return EMPTY response with 200
+                if not results:
+                    return {
+                        'time_range': {'start_time': start_time, 'end_time': end_time},
+                        'total_zones': 0,
+                        'total_cameras': 0,
+                        'zone_data': [],
+                        'camera_data': [],
+                        'chart_data': {'labels': [], 'values': [], 'absolute_values': []}
+                    }
+
                 zone_data = {}
-                total_zone_occupancy = 0  # Sum of all zone percentages
-                
-                # First pass: collect zone data
-                for row in rows:
-                    (camera_id, zone_name, avg_people, capacity, individual_percentage,
-                    count, zone_total_people, zone_total_capacity, zone_percentage) = row
-                    
+                camera_data = []
+
+                for row in results:
+                    zone_name = row[0]
+                    area_name = row[1]
+                    camera_id = row[2]
+                    avg_people = float(row[3]) if row[3] else 0.0
+                    avg_percentage = float(row[4]) if row[4] else 0.0
+                    avg_capacity = float(row[5]) if row[5] else 0.0
+
                     if zone_name not in zone_data:
                         zone_data[zone_name] = {
-                            'total_people': zone_total_people,
-                            'total_capacity': zone_total_capacity,
-                            'zone_percentage': zone_percentage,
-                            'cameras': [],
-                            'measurement_count': 0
+                            'zone_name': zone_name,
+                            'total_people': 0.0,
+                            'total_capacity': 0.0,
+                            'avg_percentage': 0.0,
+                            'camera_count': 0
                         }
-                        total_zone_occupancy += zone_percentage
-                    
-                    zone_data[zone_name]['cameras'].append(camera_id)
-                    zone_data[zone_name]['measurement_count'] += count
-                    
-                    # Store camera-level detail
-                    camera_detail = {
+
+                    zone_data[zone_name]['total_people'] += avg_people
+                    zone_data[zone_name]['total_capacity'] += avg_capacity
+                    zone_data[zone_name]['camera_count'] += 1
+
+                    camera_data.append({
                         'camera_id': camera_id,
                         'zone_name': zone_name,
-                        'average_people': round(avg_people, 2),
-                        'capacity': capacity,
-                        'average_percentage': round(individual_percentage, 2),
-                        'measurement_count': count
-                    }
-                    camera_data.append(camera_detail)
-                
-                # Calculate final zone-level statistics
-                zone_summary = []
-                for zone_name, data in zone_data.items():
-                    relative_percentage = (data['zone_percentage'] / total_zone_occupancy * 100) if total_zone_occupancy > 0 else 0
-                    zone_summary.append({
-                        'zone_name': zone_name,
-                        'cameras': data['cameras'],
-                        'total_people': round(data['total_people'], 2),
-                        'total_capacity': data['total_capacity'],
-                        'average_percentage': round(data['zone_percentage'], 2),
-                        'relative_percentage': round(relative_percentage, 2),
-                        'measurement_count': data['measurement_count']
+                        'area_name': area_name,
+                        'avg_people': round(avg_people, 1),
+                        'avg_percentage': round(avg_percentage, 1),
+                        'capacity': int(avg_capacity) if avg_capacity else 0
                     })
-                
-                # Update camera relative percentages
-                for camera in camera_data:
-                    zone_percentage = next(z['average_percentage'] for z in zone_summary 
-                                        if z['zone_name'] == camera['zone_name'])
-                    camera['relative_percentage'] = round(
-                        (camera['average_percentage'] / total_zone_occupancy * 100)
-                        if total_zone_occupancy > 0 else 0, 2
-                    )
-                
-                summary = {
-                    'time_range': {
-                        'start': start_time,
-                        'end': end_time
-                    },
-                    'total_zones': len(zone_summary),
+
+                chart_labels = []
+                chart_values = []
+                chart_absolute_values = []
+
+                zones_list = list(zone_data.values())
+                for zone in zones_list:
+                    if zone['total_capacity'] > 0:
+                        zone['avg_percentage'] = (zone['total_people'] / zone['total_capacity']) * 100
+                    else:
+                        zone['avg_percentage'] = 0.0
+
+                    chart_labels.append(zone['zone_name'])
+                    chart_values.append(round(zone['avg_percentage'], 1))
+                    chart_absolute_values.append(round(zone['total_people'], 1))
+
+                return {
+                    'time_range': {'start_time': start_time, 'end_time': end_time},
+                    'total_zones': len(zones_list),
                     'total_cameras': len(camera_data),
-                    'zone_data': zone_summary,
+                    'zone_data': zones_list,
                     'camera_data': camera_data,
                     'chart_data': {
-                        'labels': [item['zone_name'] for item in zone_summary],
-                        'values': [item['relative_percentage'] for item in zone_summary],
-                        'absolute_values': [item['average_percentage'] for item in zone_summary]
+                        'labels': chart_labels,
+                        'values': chart_values,
+                        'absolute_values': chart_absolute_values
                     }
                 }
-                
-                return summary
-                
+
         except Exception as e:
-            logger.error(f"Error calculating zone occupancy percentages: {str(e)}")
-            return None
+            logger.error(f"Error getting zone occupancy percentages: {str(e)}")
+            # ✅ Return empty response instead of None
+            return {
+                'time_range': {'start_time': start_time, 'end_time': end_time},
+                'total_zones': 0,
+                'total_cameras': 0,
+                'zone_data': [],
+                'camera_data': [],
+                'chart_data': {'labels': [], 'values': [], 'absolute_values': []}
+            }
         finally:
             if conn:
                 self.db.return_connection(conn)
-                
     def get_latest_by_camera(self, camera_id: int) -> Optional[Dict]:
         """Get the latest measurement for a specific camera"""
         conn = None

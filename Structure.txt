@@ -1,0 +1,89 @@
+Project Structure:
+This project is organized into two main parts:
+1. Back-end (Back/): Handles camera systems, YOLO/face recognition models, 
+   database operations, and log management.
+2. Front-end (Front/): Provides the web dashboard with live streams, charts, 
+   and face recognition logs.
+
+Databases are divided into:
+- crowd_management_database/: Manages crowd data, measurements, and face recognition.
+- camera_system_database/: Manages camera system data and configurations.
+
+requirements.txt specifies Python dependencies.
+
+Directory Layout:
+
+crowd_management/
+├── Back/
+│   ├── camera_system/                      Camera services (gRPC, WS bridge, ROI, logs)
+│   │   ├── camera_manager.py
+│   │   ├── camera_server.py
+│   │   ├── camera_service.proto
+│   │   ├── camera_service_pb2.py
+│   │   ├── camera_service_pb2_grpc.py
+│   │   ├── grpc_to_ws_bridge.py
+│   │   ├── roi.py
+│   │   ├── websocket_server.py
+│   │   ├── logs/
+│   │   └── __pycache__/
+│   │
+│   ├── client/                             YOLO + Face Recognition client
+│   │   ├── optimized_client.py
+│   │   ├── camera_rois.json                ROI config (client-side copy)
+│   │   ├── models/
+│   │   │   ├── model1.py
+│   │   │   ├── model2.py
+│   │   │   ├── __init__.py
+│   │   │   └── __pycache__/
+│   │   ├── yolo11l.pt
+│   │   ├── yolov8n.pt
+│   │   ├── __init__.py
+│   │   └── __pycache__/
+│   │
+│   ├── database/                           Database modules
+│   │   ├── camera_system_database/
+│   │   │   ├── CameraFieldUpdater.py
+│   │   │   ├── camera_system1.sql
+│   │   │   ├── cleaner.py
+│   │   │   ├── db_config.py
+│   │   │   ├── db_connector.py
+│   │   │   ├── insert_camera_data.py
+│   │   │   └── __pycache__/
+│   │   │
+│   │   ├── crowd_management_database/
+│   │   │   ├── crowd_management.sql
+│   │   │   ├── db_configuration.py
+│   │   │   ├── db_connector.py
+│   │   │   ├── create_partition.py
+│   │   │   ├── partition_manager.py
+│   │   │   ├── crowd_data_fetcher.py
+│   │   │   ├── crowd_fetcher_examples.py
+│   │   │   ├── crowd-management-api.py
+│   │   │   ├── crowd_measurements.py
+│   │   │   ├── face_recognition.py
+│   │   │   ├── face_recognition-api.py
+│   │   │   ├── face_recognition_fetcher.py
+│   │   │   ├── face_recognition-examples.py
+│   │   │   └── __pycache__/
+│   │   │
+│   │   ├── __init__.py
+│   │   └── __pycache__/
+│   │
+│   ├── log_manager.py
+│   ├── flow.png                            System flow diagram
+│   ├── logs/                               Back-end error logs
+│   ├── test-cam2.py                         Test script (camera)
+│   └── venv/                                Python virtual environment
+│
+├── Front/
+│   ├── html/                               Main HTML files (index.html)
+│   └── static/                             Static assets (CSS, JS, images)
+│       ├── js/                             Charts, WebSocket, camera & face list managers
+│       ├── css/
+│       └── img/
+│
+├── README.md
+├── requirements.txt                        Python dependencies
+├── crowd-management-docs.md
+├── crowd.png                               Project overview image
+└── camera_rois.json                        (NOTE: not shown in your ls output; client copy exists in Back/client/)

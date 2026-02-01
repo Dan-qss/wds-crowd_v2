@@ -120,18 +120,13 @@ async def get_data_by_time_range(
     start_time: str = Query(..., description="Start time (YYYY-MM-DD HH:MM)"),
     end_time: str = Query(..., description="End time (YYYY-MM-DD HH:MM)")
 ):
-    """Get measurements within a specific time range"""
     try:
-        data = crowd_fetcher.get_data_by_time_range(start_time, end_time)
-        if not data:
-            raise HTTPException(status_code=404, detail="No data found for the specified time range")
-        
-        # Add logging to debug the response
-        print("Response data:", data)  # For debugging
-        
-        return data
+        # fetcher will always return a valid dict (even if empty)
+        return crowd_fetcher.get_data_by_time_range(start_time, end_time)
+
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Error in endpoint: {str(e)}")  # For debugging
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/measurements/{measurement_id}", response_model=MeasurementBase)
@@ -145,14 +140,15 @@ async def get_measurement(measurement_id: int):
 @app.get("/analysis/zone-occupancy", response_model=ZoneOccupancyResponse)
 async def get_zone_occupancy_percentages(
     start_time: str = Query(..., description="Start time (YYYY-MM-DD HH:MM)"),
-    end_time: str = Query(..., description="End time (YYYY-MM-DD HH:MM)")
+    end_time: str = Query(..., description="End time (YYYY-MM-DD HH:MM)"),
+    table: Optional[str] = Query(None, description="Specific table to query (e.g., crowd_data_01_2025)")
 ):
-    """Get occupancy percentages aggregated by zones"""
     try:
-        data = crowd_fetcher.get_occupancy_percentages_by_zone(start_time, end_time)
-        if not data:
-            raise HTTPException(status_code=404, detail="No data found for the specified time range")
-        return data
+        # fetcher will always return a valid dict (even if empty)
+        return crowd_fetcher.get_occupancy_percentages_by_zone(start_time, end_time, table)
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

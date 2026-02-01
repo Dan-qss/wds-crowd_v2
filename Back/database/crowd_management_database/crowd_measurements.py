@@ -39,7 +39,7 @@ class CrowdMeasurements:
                         data['zone'], 
                         data['area'],
                         data['capacity'], 
-                        data['number_of_people'],  # This is already the rounded_average
+                        data['number_of_people'],  
                         data['crowding_level'], 
                         data['crowding_percentage'])
                     )

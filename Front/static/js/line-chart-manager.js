@@ -69,10 +69,17 @@ export default class ChartManager {
                     };
 
                     // Update data for this time slot
-                    softwareData[slotIndex] = data.chart_data.absolute_values[zoneIndices['software_lab']] || 0;
-                    roboticsData[slotIndex] = data.chart_data.absolute_values[zoneIndices['robotics_lab']] || 0;
-                    showroomData[slotIndex] = data.chart_data.absolute_values[zoneIndices['showroom']] || 0;
-                    salesData[slotIndex] = data.chart_data.absolute_values[zoneIndices['marketing-&-sales']] || 0;
+                    // softwareData[slotIndex] = data.chart_data.absolute_values[zoneIndices['software_lab']] || 0;
+                    // roboticsData[slotIndex] = data.chart_data.absolute_values[zoneIndices['robotics_lab']] || 0;
+                    // showroomData[slotIndex] = data.chart_data.absolute_values[zoneIndices['showroom']] || 0;
+                    // salesData[slotIndex] = data.chart_data.absolute_values[zoneIndices['marketing-&-sales']] || 0;
+
+                    const values = data.chart_data.values;
+                    softwareData[slotIndex] = values[zoneIndices['software_lab']] ?? 0;
+                    roboticsData[slotIndex] = values[zoneIndices['robotics_lab']] ?? 0;
+                    showroomData[slotIndex] = values[zoneIndices['showroom']] ?? 0;
+                    salesData[slotIndex]    = values[zoneIndices['marketing-&-sales']] ?? 0;
+
                 }
             } catch (error) {
                 console.error('Error fetching historical data for slot:', error);
@@ -94,7 +101,7 @@ export default class ChartManager {
 
     async fetchHistoricalData(startTime, endTime) {
         try {
-            const url = `http://127.0.0.1:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
+            const url = `http://192.168.100.65:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
             const response = await fetch(url);
 
             if (!response.ok) {
@@ -119,6 +126,7 @@ export default class ChartManager {
         
         // Calculate current time slot for visibility
         const now = new Date();
+        // console.log(data)
         const currentSlot = this.calculateTimeSlotIndex(now);
         
         this.chart = new Chart(ctx, {
@@ -302,10 +310,18 @@ export default class ChartManager {
                 });
 
                 // Update the current time slot with new data
-                this.chart.data.datasets[0].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['software_lab']] || 0;
-                this.chart.data.datasets[1].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['robotics_lab']] || 0;
-                this.chart.data.datasets[2].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['showroom']] || 0;
-                this.chart.data.datasets[3].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['marketing-&-sales']] || 0;
+                // this.chart.data.datasets[0].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['software_lab']] || 0;
+                // this.chart.data.datasets[1].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['robotics_lab']] || 0;
+                // this.chart.data.datasets[2].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['showroom']] || 0;
+                // this.chart.data.datasets[3].data[dataIndex] = data.chart_data.absolute_values[zoneIndices['marketing-&-sales']] || 0;
+
+                const values = data.chart_data.values;
+
+                this.chart.data.datasets[0].data[dataIndex] = values[zoneIndices['software_lab']] ?? 0;
+                this.chart.data.datasets[1].data[dataIndex] = values[zoneIndices['robotics_lab']] ?? 0;
+                this.chart.data.datasets[2].data[dataIndex] = values[zoneIndices['showroom']] ?? 0;
+                this.chart.data.datasets[3].data[dataIndex] = values[zoneIndices['marketing-&-sales']] ?? 0;
+
 
                 this.chart.update();
                 console.log(`Chart updated for ${currentHour}:${currentMinute.toString().padStart(2, '0')}`);
@@ -315,10 +331,16 @@ export default class ChartManager {
         }
     }
 
+    // formatDateTime(date) {
+    //     const pad = (num) => String(num).padStart(2, '0');
+    //     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    // }
+
     formatDateTime(date) {
-        const pad = (num) => String(num).padStart(2, '0');
-        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-    }
+    const pad = (num) => String(num).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 
     startAutoUpdate() {
         // console.log('Starting line chart auto-update (15 minute interval)');

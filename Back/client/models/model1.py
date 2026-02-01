@@ -1,3 +1,4 @@
+# Back/client/models/model1.py
 import torch
 import logging
 from ultralytics import YOLO
@@ -174,8 +175,14 @@ class Model1:
                         "crowding_level": crowding_level,
                         "crowding_percentage": round(percentage, 2)
                     }
-                    
+                                       
+                
                     measurements_to_insert.append(data)
+
+                     # Log the data to a separate file for clarity
+                    # data_log_path = os.path.join(log_dir, 'data.log')
+                    # with open(data_log_path, 'a') as data_log:
+                    #     data_log.write(f"AFTER {datetime.now()} - {data}\n")
             
             if measurements_to_insert:
                 self.send_to_database(measurements_to_insert)

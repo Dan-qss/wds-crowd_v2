@@ -115,7 +115,7 @@ export default class PieChart2Manager {
 
         try {
 
-            const url = `http://127.0.0.1:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
+            const url = `http://192.168.100.65:8010/analysis/zone-occupancy?start_time=${encodeURIComponent(this.formatDateTime(startTime))}&end_time=${encodeURIComponent(this.formatDateTime(endTime))}`;
 
             const response = await fetch(url);
 
