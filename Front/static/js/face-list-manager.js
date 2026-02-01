@@ -75,6 +75,7 @@ export default class FaceListManager {
             const response = await fetch('http://192.168.100.65:8020/recognitions/last/5', {
                 signal: this.controller.signal
             });
+            // TEST
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);

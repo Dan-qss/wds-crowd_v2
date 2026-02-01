@@ -207,7 +207,7 @@ export default class PieChart2Manager {
             });
             return;
         }
-
+// TEST
         // Generate fake data instead of fetching from API
         try {
             const fakeData = this.generateCurrentFakeData();
