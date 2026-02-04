@@ -4,6 +4,8 @@ import WebSocketHandler from "./websocket-handler.js";
 import CameraManager from "./camera-manager.js";
 import FaceListManager from "./face-list-manager.js";
 import ZoneMasksManager from "./zone-masks-manager.js";
+import "./heatmap-manager.js"; // side-effect فقط
+
 
 
 
@@ -168,6 +170,22 @@ let zoneMasks = null;
     console.error("ZoneMasksManager failed:", e);
   }
 })();
+
+// ===== TEMP: demo heatmap animation (delete tomorrow) =====
+// const demoHeat = new HeatmapManager("heatmap-container");
+const demoHeat = new window.HeatmapManager("heatmap-container");
+
+const levels = ["low", "moderate", "high"];
+let t = 0;
+
+setInterval(() => {
+  demoHeat.update([
+    { x: 0.18, y: 0.55, r: 0.28, level: levels[(t + 2) % 3] },
+    { x: 0.50, y: 0.62, r: 0.22, level: levels[(t + 1) % 3] },
+    { x: 0.78, y: 0.35, r: 0.26, level: levels[t % 3] },
+  ]);
+  t++;
+}, 3000);
 
 
 
