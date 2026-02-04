@@ -79,7 +79,7 @@
         el.style.background = `radial-gradient(ellipse 90% 85% at 50% 50%, ${color} 0%, rgba(0,0,0,0) 70%)`;
 
         // Blur/feather
-        el.style.filter = "blur(50px)"
+        el.style.filter = "blur(16px)"
 
         // Slight extra softness so edges disappear nicely
         el.style.opacity = "1";

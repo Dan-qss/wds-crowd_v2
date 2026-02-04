@@ -162,7 +162,9 @@ let zoneMasks = null;
   try {
     zoneMasks = new ZoneMasksManager({
       regionsJsonUrl: "../static/img/regions.json", // حطي regions.json هون
-      fill: "rgba(200,200,200,0.18)",
+      // fill: "rgba(200,200,200,0.18)",
+      fill: "rgba(0,0,0,0)",
+
       
     });
     await zoneMasks.start();
