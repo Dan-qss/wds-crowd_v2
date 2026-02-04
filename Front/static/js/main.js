@@ -3,6 +3,7 @@ import { CONFIG } from "./config.js";
 import WebSocketHandler from "./websocket-handler.js";
 import CameraManager from "./camera-manager.js";
 import FaceListManager from "./face-list-manager.js";
+import ZoneMasksManager from "./zone-masks-manager.js";
 
 
 
@@ -28,6 +29,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const wsHandler = new WebSocketHandler(CONFIG.WS_URL, (data) => {
     try {
       cameraManager.handleFrame(data);
+
+        // ====== push crowd level into buffer ======
+        const zid = String(data.camera_id);
+        const lvl = data?.status?.crowding_level || data?.crowding_level; 
+        // حسب كيف الWS بيرسلها (بعض الأنظمة تحطها تحت status)
+
+        if (zoneLevelBuffers[zid]) {
+          zoneLevelBuffers[zid].push(lvl);
+
+          // keep last N فقط (احتياط)
+          if (zoneLevelBuffers[zid].length > BATCH_SIZE) {
+            zoneLevelBuffers[zid].shift();
+          }
+        }
+
     } catch (e) {
       console.error("CameraManager.handleFrame error:", e);
     }
@@ -88,6 +104,73 @@ document.addEventListener("DOMContentLoaded", () => {
   containerSelector: ".facelist-container",
 });
 
+
+// Zone masks overlay (5 masks with ids zone-1..zone-5)
+// ====== LIVE ZONE HEATMAP (from WS) ======
+const ZONE_IDS = ["1", "2", "3", "4", "5"];
+
+// لكل زون نخزن آخر N crowding levels
+const zoneLevelBuffers = {
+  "1": [],
+  "2": [],
+  "3": [],
+  "4": [],
+  "5": [],
+};
+
+const BATCH_SIZE = 11;     // نفس فكرتك (حوالي 5-10 ثواني حسب fps)
+const FLUSH_MS = 5000;     // لو بدك تلون كل 5 ثواني
+
+function mode(arr) {
+  const freq = {};
+  let best = null, bestN = 0;
+  for (const v of arr) {
+    if (!v) continue;
+    freq[v] = (freq[v] || 0) + 1;
+    if (freq[v] > bestN) { bestN = freq[v]; best = v; }
+  }
+  return best;
+}
+
+function colorForLevel(level) {
+  // level جاية من الباك: "Low" | "Moderate" | "Crowded"
+  if (level === "Crowded") return "rgba(239, 68, 68, 0.35)";
+  if (level === "Moderate") return "rgba(234, 179, 8, 0.35)";
+  return "rgba(34, 197, 94, 0.28)";
+}
+
+// كل 5 ثواني: احسبي mode و لوني
+const heatFlushTimer = setInterval(() => {
+  if (!zoneMasks) return; // zoneMasks لسه ما خلص start()
+
+  for (const zid of ZONE_IDS) {
+    const buf = zoneLevelBuffers[zid];
+    if (!buf?.length) continue;
+
+    const m = mode(buf);
+    if (!m) continue;
+
+    zoneMasks.setZoneColor(zid, colorForLevel(m));
+    zoneLevelBuffers[zid] = []; // نفرغ البفر بعد ما نطبق
+  }
+}, FLUSH_MS);
+
+let zoneMasks = null;
+(async () => {
+  try {
+    zoneMasks = new ZoneMasksManager({
+      regionsJsonUrl: "../static/img/regions.json", // حطي regions.json هون
+      fill: "rgba(200,200,200,0.18)",
+      
+    });
+    await zoneMasks.start();
+  } catch (e) {
+    console.error("ZoneMasksManager failed:", e);
+  }
+})();
+
+
+
   // Cleanup
   window.addEventListener("beforeunload", () => {
     try { wsHandler?.close?.(); } catch {}
@@ -96,6 +179,10 @@ document.addEventListener("DOMContentLoaded", () => {
     try { topZones?.stop?.(); } catch {}
     try { peakLine?.stop?.(); } catch {}
     try { faceListManager?.destroy?.(); } catch {}
+    try { zoneMasks?.destroy?.(); } catch {}
+    try { clearInterval(heatFlushTimer); } catch {}
+
+
 
   });
 });

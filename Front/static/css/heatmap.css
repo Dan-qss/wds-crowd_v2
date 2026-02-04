@@ -11,3 +11,18 @@
   opacity: 1;
   filter: blur(28px);
 }
+
+#heatmap-container .heatmap-overlay{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity: 0.5; /* خليها 0.8 لو بدك أخف */
+
+}
+#heatmap-container .heatmap-overlay svg{
+  width:100%;
+  height:100%;
+  display:block;
+}
+
+
