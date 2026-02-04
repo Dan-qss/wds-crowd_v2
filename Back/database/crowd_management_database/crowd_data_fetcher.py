@@ -193,7 +193,6 @@ class CrowdDataFetcher:
             if conn:
                 self.db.return_connection(conn)
 
-
     # Add this method to your CrowdDataFetcher class
     def get_occupancy_percentages_by_zone(self, start_time: str, end_time: str, table_name: Optional[str] = None) -> Dict:
         """
@@ -314,6 +313,7 @@ class CrowdDataFetcher:
         finally:
             if conn:
                 self.db.return_connection(conn)
+    
     def get_latest_by_camera(self, camera_id: int) -> Optional[Dict]:
         """Get the latest measurement for a specific camera"""
         conn = None
@@ -423,3 +423,84 @@ class CrowdDataFetcher:
             if conn:
                 self.db.return_connection(conn)
 
+    def get_peak_so_far_today_all_zones(
+        self,
+        start_hour: int = 8,
+        end_hour: int = 19
+    ) -> Dict[str, Any]:
+        """
+        Peak so far (today) across ALL zones.
+        Returns the hour (0-23) with the highest average crowding_percentage
+        between today start_hour and now (capped at end_hour).
+        """
+        conn = None
+        try:
+            conn = self.db.get_connection()
+            with conn.cursor() as cur:
+                now = datetime.now()
+
+                # start = اليوم 08:00
+                start_dt = now.replace(hour=start_hour, minute=0, second=0, microsecond=0)
+
+                # end = الآن بس مقصوص على 19:00
+                end_dt = now.replace(hour=end_hour, minute=0, second=0, microsecond=0)
+                if now < end_dt:
+                    end_dt = now
+
+                # إذا قبل وقت الافتتاح (قبل 08:00) رجّعي فاضي
+                if end_dt <= start_dt:
+                    return {
+                        "date": start_dt.strftime("%Y-%m-%d"),
+                        "range": {
+                            "start_time": start_dt.strftime("%Y-%m-%d %H:%M"),
+                            "end_time": end_dt.strftime("%Y-%m-%d %H:%M"),
+                        },
+                        "peak_hour": None,
+                        "peak_avg_percentage": None
+                    }
+
+                cur.execute("""
+                    SELECT
+                        EXTRACT(HOUR FROM measured_at) AS hour,
+                        AVG(crowding_percentage) AS avg_percentage
+                    FROM crowd_measurements
+                    WHERE measured_at >= %s
+                    AND measured_at <= %s
+                    GROUP BY EXTRACT(HOUR FROM measured_at)
+                    ORDER BY avg_percentage DESC
+                    LIMIT 1
+                """, (start_dt, end_dt))
+
+                row = cur.fetchone()
+                if not row:
+                    return {
+                        "date": start_dt.strftime("%Y-%m-%d"),
+                        "range": {
+                            "start_time": start_dt.strftime("%Y-%m-%d %H:%M"),
+                            "end_time": end_dt.strftime("%Y-%m-%d %H:%M"),
+                        },
+                        "peak_hour": None,
+                        "peak_avg_percentage": None
+                    }
+
+                return {
+                    "date": start_dt.strftime("%Y-%m-%d"),
+                    "range": {
+                        "start_time": start_dt.strftime("%Y-%m-%d %H:%M"),
+                        "end_time": end_dt.strftime("%Y-%m-%d %H:%M"),
+                    },
+                    "peak_hour": int(row[0]),
+                    "peak_avg_percentage": round(float(row[1] or 0.0), 2)
+                }
+
+        except Exception as e:
+            logger.error(f"Error getting peak so far today: {str(e)}")
+            return {
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "range": {"start_time": None, "end_time": None},
+                "peak_hour": None,
+                "peak_avg_percentage": None
+            }
+        finally:
+            if conn:
+                self.db.return_connection(conn)

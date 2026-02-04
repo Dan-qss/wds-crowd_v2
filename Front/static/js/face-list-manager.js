@@ -1,100 +1,130 @@
-// face-list-manager.js
+// static/js/face-list-manager.js
 export default class FaceListManager {
-    constructor() {
-        this.controller = null;
-        this.initialize();
+  constructor({
+    baseUrl = "http://192.168.101.124:8020",
+    limit = 8,
+    pollMs = 1500,
+    containerSelector = ".facelist-container",
+  } = {}) {
+    this.baseUrl = baseUrl.replace(/\/$/, "");
+    this.limit = limit;
+    this.pollMs = pollMs;
+    this.container = document.querySelector(containerSelector);
+    this.controller = null;
+    this.timer = null;
+
+    this.initialize();
+  }
+
+  formatName(name) {
+    if (!name) return "";
+    return String(name)
+      .split("_")
+      .map(w => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : ""))
+      .join(" ");
+  }
+
+  formatDateTime(ts) {
+    try {
+      const d = new Date(ts);
+      const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+      const date = d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+      return `${time}, ${date}`;
+    } catch {
+      return "--";
+    }
+  }
+
+  statusBadge(status) {
+    const s = String(status || "").toLowerCase();
+    if (s.includes("black")) return { text: "Black List", icon: "blocked.png", color: "text-alert-red" };
+    if (s.includes("white") || s.includes("employee")) return { text: "Employee", icon: "employee.png", color: "text-accent" };
+    return { text: status || "Unknown", icon: "employee.png", color: "text-muted" };
+  }
+
+  render(data) {
+    if (!this.container) return;
+
+    if (!Array.isArray(data) || data.length === 0) {
+      this.container.innerHTML = `
+        <div class="text-sm text-white/70 bg-black/10 border border-white/10 rounded-lg p-3">
+          No recognition data yet.
+        </div>
+      `;
+      return;
     }
 
-    loadEmployees(data) {
-        const facePanel = document.getElementById('face-panel');
-        if (!facePanel) return;
-        
-        facePanel.innerHTML = '';
+    this.container.innerHTML = "";
 
-        data.forEach(employee => {
-            const employeeContainer = document.createElement('div');
-            employeeContainer.className = 'container face-data-container mb-2 py-2';
+    data.forEach((row) => {
+      const personNameRaw = row.person_name || "unknown";
+      const personName = this.formatName(personNameRaw);
+      const zone = this.formatName(row.zone || "");
+      const position = row.position || "";
+      const time = this.formatDateTime(row.timestamp);
+      const badge = this.statusBadge(row.status);
 
-            // Format the timestamp
-            const timestamp = new Date(employee.timestamp);
-            const formattedDateTime = {
-                date: timestamp.toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                }),
-                time: timestamp.toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                })
-            };
+      // إذا عندك صور للأشخاص مثل زمان: ../static/img/persons/{person}.png
+      const imgPath = `../static/img/persons/${personNameRaw}.png`;
 
-            // Format the name: replace underscore with space and capitalize first letters
-            const formatName = (name) => {
-                return name
-                    .split('_')
-                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                    .join(' ');
-            };
-            const imagePath = `../static/img/persons/${employee.person_name}.png`;
-            const formattedName = formatName(employee.person_name);
-            const formattedTime = `${formattedDateTime.time},${formattedDateTime.date}`;
-            const formattedZone = formatName(employee.zone);
+      const card = document.createElement("div");
+      card.className =
+        "flex items-center gap-3 rounded-lg px-3 py-2.5 border border-white/10 shadow-sm shrink-0";
+      card.style.backgroundColor = "#1e3d32";
 
+      card.innerHTML = `
+        <div class="w-10 h-10 rounded-full bg-slate-600 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden">
+          <img src="${imgPath}" onerror="this.style.display='none'" class="w-full h-full object-cover" />
+          <svg class="w-5 h-5 text-slate-300" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
+        </div>
 
-            employeeContainer.innerHTML = `
-                <div class="row">
-                    <div class="col-xl-3 col-lg-3 col-md-3 col-sm-3">
-                       <img src="${imagePath}" alt="" class="face-img" id="person-img">
-                    </div>
-                    <div class="col-xl-7 col-lg-7 col-md-7 col-sm-7 pt-2">
-                        <p class="personName" id="person-name">${formattedName}</p>
-                        <p class="personPosi" id="person-posi">${employee.position}</p>
-                        <p class="personPosi" id="person-posi">${formattedTime}</p>
-                        <p class="personPosi" id="f-posi">${formattedZone}</p>
-                        <p class="BWlist" id="BW-list">${employee.status } List</p>
-                    </div>
-                    <div class="col-xl-2 col-lg-2 col-md-2 col-sm-2">
-                        <img src="../static/img/cms/${employee.status.includes('black') ? 'black' : 'white'}.png" alt="" class="mt-3" id="icon">
-                    </div>
-                </div>
-            `;
+        <div class="flex-1 min-w-0">
+          <p class="font-medium text-sm text-white truncate">${personName}</p>
+          <p class="text-xs text-white/70 truncate">${position}</p>
+          <p class="text-xs text-white/70 truncate">${time}</p>
+          <p class="text-xs text-white/70 truncate">${zone}</p>
+          <p class="text-sm font-medium ${badge.color}">${badge.text}</p>
+        </div>
 
-            facePanel.appendChild(employeeContainer);
-        });
+        <div class="w-8 h-8 flex items-center justify-center shrink-0">
+          <img src="../static/img/${badge.icon}" alt="" class="w-8 h-8 object-contain" />
+        </div>
+      `;
+
+      this.container.appendChild(card);
+    });
+  }
+
+  async fetchData() {
+    if (this.controller) this.controller.abort();
+    this.controller = new AbortController();
+
+    try {
+      const url = `${this.baseUrl}/recognitions/last/${this.limit}`;
+      const res = await fetch(url, { signal: this.controller.signal });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      this.render(data);
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        console.error("FaceList fetch error:", err);
+      }
     }
+  }
 
-    async fetchData() {
-        if (this.controller) {
-            this.controller.abort();
-        }
-        this.controller = new AbortController();
-        
-        try {
-            const response = await fetch('http://192.168.100.65:8020/recognitions/last/5', {
-                signal: this.controller.signal
-            });
-            // TEST
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            this.loadEmployees(data);
-        } catch (error) {
-            if (error.name !== 'AbortError') {
-                console.error('Error fetching data:', error);
-            }
-        }
-    }
+  initialize() {
+    this.fetchData();
+    this.timer = setInterval(() => this.fetchData(), this.pollMs);
+  }
 
-    initialize() {
-        // Initial fetch
-        this.fetchData();
-        
-        // Set up polling interval
-        setInterval(() => this.fetchData(), 1000);
-    }
+  destroy() {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+    if (this.controller) this.controller.abort();
+    this.controller = null;
+  }
 }
