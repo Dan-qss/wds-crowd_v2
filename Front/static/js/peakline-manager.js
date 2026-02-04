@@ -1,64 +1,109 @@
 // static/js/peakline-manager.js
-import { fetchJson, clampPct, hourLabelFromIso } from './utils.js';
-
 export default class PeakLineManager {
-  constructor({ crowdApiBase, pollMs = 15000 } = {}) {
-    this.base = crowdApiBase;
+  constructor({
+    crowdApiBase,
+    pollMs = 5 * 60 * 1000, // كل 5 دقائق نتحقق إذا دخلنا ساعة جديدة
+    startHour = 8,
+    endHour = 21, // 9pm
+    debug = false,
+  } = {}) {
+    this.base = (crowdApiBase || "").replace(/\/$/, "");
     this.pollMs = pollMs;
-    this.zone = null;
+    this.startHour = startHour;
+    this.endHour = endHour;
+    this.debug = debug;
 
-    this.canvas = document.getElementById('peak-chart');
-    this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
+    this.canvas = document.getElementById("peak-chart");
+    this.ctx = this.canvas ? this.canvas.getContext("2d") : null;
 
     this.timer = null;
-    this.abort = null;
+    this.lastBuiltForDate = null;
+    this.lastCompletedHour = null; // آخر ساعة مكتملة رسمناها
 
-    if (!this.canvas || !this.ctx) return;
+    if (!this.canvas || !this.ctx || !this.base) return;
 
-    // لما KPI يحدد Top Zone، خذها وارسم فوراً
-    window.addEventListener('topzone:change', (e) => {
-      const z = e?.detail?.zone;
-      if (z && z !== this.zone) {
-        this.zone = z;
-        this.refresh();
-      }
-    });
-
-    window.addEventListener('resize', () => this._redrawLast());
-    this.timer = setInterval(() => this.refresh(), this.pollMs);
+    window.addEventListener("resize", () => this._redrawLast());
   }
 
-  destroy() {
+  start() {
+    this.stop();
+    this.refresh(true);
+    this.timer = setInterval(() => this.refresh(false), this.pollMs);
+  }
+
+  stop() {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
-    if (this.abort) this.abort.abort();
-    this.abort = null;
   }
 
-  async refresh() {
-    if (!this.base || !this.zone || !this.canvas || !this.ctx) return;
+  async refresh(force = false) {
+    if (!this.canvas || !this.ctx) return;
 
-    if (this.abort) this.abort.abort();
-    this.abort = new AbortController();
+    const now = new Date();
+    const todayKey = this._dateKey(now);
+
+    // Reset يوم جديد
+    if (this.lastBuiltForDate !== todayKey) {
+      this.lastBuiltForDate = todayKey;
+      this.lastCompletedHour = null;
+      force = true;
+    }
+
+    // آخر ساعة “مكتملة” نقدر نحسبها: من (h-1 → h)
+    const completedHour = Math.min(now.getHours(), this.endHour);
+    // قبل 08:00 ما في بيانات
+    if (completedHour <= this.startHour) {
+      this._last = { labels: [], values: [] };
+      this.draw([], []);
+      return;
+    }
+
+    // إذا ما تغيرت الساعة وما في force، ما نعيد الحساب
+    if (!force && this.lastCompletedHour === completedHour) return;
+
+    // ابنِ السلسلة من 09 إلى completedHour (لأن كل نقطة = متوسط ساعة كاملة قبلها)
+    const labels = [];
+    const values = [];
+
+    for (let h = this.startHour + 1; h <= completedHour; h++) {
+      const start = this._todayAtHour(now, h - 1);
+      const end = this._todayAtHour(now, h);
+
+      const pct = await this._fetchAvgPctAcrossAllZones(start, end);
+      labels.push(this._hourLabel(h));
+      values.push(pct);
+    }
+
+    this.lastCompletedHour = completedHour;
+    this._last = { labels, values };
+    this.draw(labels, values);
+
+    if (this.debug) console.log("[PeakLine] updated up to hour:", completedHour, { labels, values });
+  }
+
+  async _fetchAvgPctAcrossAllZones(startDate, endDate) {
+    const startStr = this._formatYmdHm(startDate);
+    const endStr = this._formatYmdHm(endDate);
+
+    const url =
+      `${this.base}/analysis/zone-occupancy?start_time=${encodeURIComponent(startStr)}` +
+      `&end_time=${encodeURIComponent(endStr)}`;
 
     try {
-      const url = `${this.base}/zones/${encodeURIComponent(this.zone)}/hourly-averages`;
-      const data = await fetchJson(url, { signal: this.abort.signal });
+      const resp = await this._fetchJson(url);
+      const zones = Array.isArray(resp?.zone_data) ? resp.zone_data : [];
 
-      const labels = (data || []).map(x => hourLabelFromIso(x.hour));
-      const values = (data || []).map(x => clampPct(x.avg_percentage));
+      if (!zones.length) return 0;
 
-      this._last = { labels, values };
-      this.draw(labels, values);
+      const sumPeople = zones.reduce((s, z) => s + Number(z.total_people || 0), 0);
+      const sumCap = zones.reduce((s, z) => s + Number(z.total_capacity || 0), 0);
+      const pct = sumCap > 0 ? (sumPeople / sumCap) * 100 : 0;
 
-      // KPI Peak Time (اختياري)
-      const peakIdx = values.length ? values.indexOf(Math.max(...values)) : -1;
-      const peakEl = document.getElementById('kpi-peak-time');
-      if (peakEl && peakIdx >= 0) peakEl.textContent = labels[peakIdx] || '--';
-
+      // clamp 0..100
+      return Math.max(0, Math.min(100, pct));
     } catch (e) {
-      console.error('[PeakLineManager]', e);
-      // لا تعمل throw عشان ما توقف شيء
+      console.error("[PeakLine] fetch failed:", e?.message || e);
+      return 0;
     }
   }
 
@@ -79,43 +124,22 @@ export default class PeakLineManager {
     ctx.clearRect(0, 0, w, h);
 
     if (!values || values.length < 2) {
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.font = '12px Inter, Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('No data', w / 2, h / 2);
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.font = "12px Inter, Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("No data yet", w / 2, h / 2);
       return;
     }
 
-    const padding = 10;
+    const padding = 12;
     const plotW = w - padding * 2;
-    const plotH = h - padding * 2 - 14; // space for x labels
-
-    // Normalize
-    const maxV = 100;
-    const minV = 0;
+    const plotH = h - padding * 2 - 14;
 
     const xStep = plotW / (values.length - 1);
-
     const yFor = (v) => {
-      const t = (v - minV) / (maxV - minV);
+      const t = v / 100; // 0..1
       return padding + (1 - t) * plotH;
     };
-
-    // Area fill
-    ctx.beginPath();
-    ctx.moveTo(padding, yFor(values[0]));
-    for (let i = 1; i < values.length; i++) {
-      ctx.lineTo(padding + i * xStep, yFor(values[i]));
-    }
-    ctx.lineTo(padding + plotW, padding + plotH);
-    ctx.lineTo(padding, padding + plotH);
-    ctx.closePath();
-
-    const grad = ctx.createLinearGradient(0, padding, 0, padding + plotH);
-    grad.addColorStop(0, 'rgba(34,197,94,0.35)');
-    grad.addColorStop(1, 'rgba(34,197,94,0)');
-    ctx.fillStyle = grad;
-    ctx.fill();
 
     // Line
     ctx.beginPath();
@@ -123,19 +147,63 @@ export default class PeakLineManager {
     for (let i = 1; i < values.length; i++) {
       ctx.lineTo(padding + i * xStep, yFor(values[i]));
     }
-    ctx.strokeStyle = 'rgba(34,197,94,1)';
+    ctx.strokeStyle = "rgba(34,197,94,1)";
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // X labels (few)
-    ctx.fillStyle = 'rgba(148,163,184,1)';
-    ctx.font = '10px Inter, Arial';
-    ctx.textAlign = 'center';
-    const ticks = 4;
-    for (let i = 0; i < ticks; i++) {
-      const idx = Math.round((i / (ticks - 1)) * (labels.length - 1));
-      const x = padding + idx * xStep;
-      ctx.fillText(labels[idx] || '', x, h - 2);
+    // Points
+    ctx.fillStyle = "rgba(34,197,94,1)";
+    for (let i = 0; i < values.length; i++) {
+      const x = padding + i * xStep;
+      const y = yFor(values[i]);
+      ctx.beginPath();
+      ctx.arc(x, y, 2.8, 0, Math.PI * 2);
+      ctx.fill();
     }
+
+    // X labels (few)
+    ctx.fillStyle = "rgba(148,163,184,1)";
+    ctx.font = "10px Inter, Arial";
+    ctx.textAlign = "center";
+    const ticks = Math.min(5, labels.length);
+    for (let i = 0; i < labels.length; i++) {
+  const x = padding + i * xStep;
+
+  // اعرض كل ساعتين، وبالإضافة اعرض 11:00 دائمًا
+  const isEleven = labels[i] === "11:00";
+  if (i % 1 === 0 || isEleven) {
+    ctx.fillText(labels[i], x, h - 2);
+  }
+}
+
+  }
+
+  async _fetchJson(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status} - ${url}`);
+    return res.json();
+  }
+
+  _todayAtHour(now, hour) {
+    const d = new Date(now);
+    d.setHours(hour, 0, 0, 0);
+    return d;
+  }
+
+  _formatYmdHm(d) {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+  }
+
+  _hourLabel(h) {
+    return `${String(h).padStart(2, "0")}:00`;
+  }
+
+  _dateKey(d) {
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
   }
 }

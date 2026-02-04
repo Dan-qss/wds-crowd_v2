@@ -8,4 +8,12 @@ export const CONFIG = {
     KPI: 2000,
     PEAK_CHART: 15000,
   },
+
+   CAMERA_NAMES: {
+    "1": "In- Fixar aircraft",
+    "2": "In - V-BAT aircraft",
+    "3": "Ex- Drones",
+    "4": "Ex- Barista Robot",
+    "5": "Ex - FlyNow"
+  },
 };

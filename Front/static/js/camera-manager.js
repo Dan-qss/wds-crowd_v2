@@ -1,10 +1,11 @@
 // static/js/camera-manager.js
-import * as pako from 'https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.esm.mjs';
+import * as pako from "https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.esm.mjs";
 
 class CameraManager {
-  constructor({ box1, box2 }) {
+  constructor({ box1, box2, cameraLabels = {} }) {
     this.frames = {}; // cameraId -> last Image
     this.lastFrameTs = {}; // cameraId -> timestamp
+    this.cameraLabels = cameraLabels;
 
     this.box1 = this._initBox(box1);
     this.box2 = this._initBox(box2);
@@ -14,41 +15,65 @@ class CameraManager {
 
     this._startOfflineMonitor();
     this._onResize = () => this._redrawActive();
-    window.addEventListener('resize', this._onResize);
+    window.addEventListener("resize", this._onResize);
   }
 
   _initBox(cfg) {
     const canvas = document.getElementById(cfg.canvasId);
     if (!canvas) throw new Error(`Canvas not found: ${cfg.canvasId}`);
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
+
+    const rotateIds = (cfg.rotateCameraIds || []).map(String);
+    const activeId = rotateIds[0] || null;
+
+    const labelEl = cfg.labelElId ? document.getElementById(cfg.labelElId) : null;
+
+    // set initial label
+    if (labelEl && activeId) labelEl.textContent = this._labelFor(activeId);
 
     return {
       canvas,
       ctx,
-      rotateIds: cfg.rotateCameraIds.map(String),
+      rotateIds,
       intervalMs: cfg.intervalMs || 5000,
       idx: 0,
       timer: null,
-      activeId: cfg.rotateCameraIds[0] ? String(cfg.rotateCameraIds[0]) : null,
+      activeId,
+      labelEl,
     };
   }
 
+  _labelFor(cameraId) {
+    const key = String(cameraId);
+    const name = this.cameraLabels?.[key];
+    if (name) return name;
+
+    // fallback CAM-01 style
+    const padded = key.padStart(2, "0");
+    return `CAM-${padded}`;
+  }
+
+  _setActive(box, cameraId) {
+    box.activeId = cameraId;
+    if (box.labelEl && cameraId) box.labelEl.textContent = this._labelFor(cameraId);
+  }
+
   _startRotation(box) {
-    // ارسم أول شيء لو موجود
+    // draw first if available
     this._drawIfAvailable(box, box.activeId);
 
     box.timer = setInterval(() => {
       if (!box.rotateIds.length) return;
       box.idx = (box.idx + 1) % box.rotateIds.length;
-      box.activeId = box.rotateIds[box.idx];
-      this._drawIfAvailable(box, box.activeId);
+      const nextId = box.rotateIds[box.idx];
+      this._setActive(box, nextId);
+      this._drawIfAvailable(box, nextId);
     }, box.intervalMs);
   }
 
   _startOfflineMonitor() {
     this.monitorTimer = setInterval(() => {
       const now = Date.now();
-      // إذا الكاميرا النشطة ما جالها frames آخر 10 ثواني: اعرض NO STREAM
       [this.box1, this.box2].forEach((box) => {
         const id = box.activeId;
         const last = this.lastFrameTs[id] || 0;
@@ -63,43 +88,39 @@ class CameraManager {
     clearInterval(this.box1?.timer);
     clearInterval(this.box2?.timer);
     clearInterval(this.monitorTimer);
-    window.removeEventListener('resize', this._onResize);
+    window.removeEventListener("resize", this._onResize);
   }
 
   handleFrame(data) {
     const cameraId = String(data.camera_id);
     this.lastFrameTs[cameraId] = Date.now();
 
-    // decode compressed jpeg (مثل مشروعك)
     const img = new Image();
     try {
       const compressedData = atob(data.frame);
-      const compressedArray = Uint8Array.from(compressedData, c => c.charCodeAt(0));
+      const compressedArray = Uint8Array.from(compressedData, (c) => c.charCodeAt(0));
       const decompressedArray = pako.inflate(compressedArray);
 
-      const blob = new Blob([decompressedArray], { type: 'image/jpeg' });
+      const blob = new Blob([decompressedArray], { type: "image/jpeg" });
       const url = URL.createObjectURL(blob);
 
       img.onload = () => {
         this.frames[cameraId] = img;
         URL.revokeObjectURL(url);
 
-        // لو هذا frame للكاميرا النشطة في أي بوكس — ارسمه فوراً
-        if (cameraId === this.box1.activeId) this._draw(boxSafe(this.box1), img);
-        if (cameraId === this.box2.activeId) this._draw(boxSafe(this.box2), img);
+        if (cameraId === this.box1.activeId) this._draw(this.box1, img);
+        if (cameraId === this.box2.activeId) this._draw(this.box2, img);
       };
       img.src = url;
     } catch (e) {
-      console.error('Failed to decode frame', e);
+      console.error("Failed to decode frame", e);
     }
-
-    function boxSafe(b) { return b; }
   }
 
   _drawIfAvailable(box, cameraId) {
     const img = this.frames[cameraId];
     if (img) this._draw(box, img);
-    else this._showNoStream(box, cameraId); // أو ممكن تحطي WAITING بدلها
+    else this._showNoStream(box, cameraId);
   }
 
   _redrawActive() {
@@ -141,21 +162,21 @@ class CameraManager {
     if (canvas.height === 0) canvas.height = 360;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.font = 'bold 34px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.font = "bold 34px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
 
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-    ctx.fillText('NO STREAM', canvas.width / 2 + 2, canvas.height / 2 + 2);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+    ctx.fillText("NO STREAM", canvas.width / 2 + 2, canvas.height / 2 + 2);
 
-    ctx.fillStyle = '#FF0000';
-    ctx.fillText('NO STREAM', canvas.width / 2, canvas.height / 2);
+    ctx.fillStyle = "#FF0000";
+    ctx.fillText("NO STREAM", canvas.width / 2, canvas.height / 2);
 
-    ctx.font = '16px Arial';
-    ctx.fillStyle = '#FFFFFF';
+    ctx.font = "16px Arial";
+    ctx.fillStyle = "#FFFFFF";
     ctx.fillText(`Camera ${cameraId} offline`, canvas.width / 2, canvas.height / 2 + 40);
   }
 }
