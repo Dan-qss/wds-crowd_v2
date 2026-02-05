@@ -189,6 +189,25 @@ setInterval(() => {
   t++;
 }, 3000);
 
+  // Pie chart (zone distribution)
+  let pieChart = null;
+  (async () => {
+    try {
+      const mod = await import("./piechart-dynamic-manager.js");
+      const PieChartDynamicManager = mod.default;
+
+      pieChart = new PieChartDynamicManager({
+        crowdApiBase: CONFIG.CROWD_API_BASE,
+        canvasId: "pieChart2",
+        updateMs: 2000,
+        windowSeconds: 60,
+      });
+
+      pieChart.start();
+    } catch (e) {
+      console.error("PieChart failed:", e);
+    }
+  })();
 
 
   // Cleanup
