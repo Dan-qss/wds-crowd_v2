@@ -234,19 +234,23 @@
             <!-- Right column mini -->
             <div class="md:col-span-3 flex flex-col gap-4 min-h-0 flex-1 md:min-h-full">
 
-            <!-- Zone Distribution (Live) - replaces 5-Day Comparison -->
-            <div class="rounded-xl bg-card-green border border-white/5 overflow-hidden flex flex-col flex-1 min-h-0 shadow-sm">
-              <div class="p-4 border-b border-white/5 shrink-0">
-                <h2 class="text-base font-semibold text-white">Zone Occupancy Distribution</h2>
-              </div>
+              <!-- 5 day bars -->
+      <!-- Zone Distribution (Pie) - replaces 5-Day Comparison -->
+        <div class="rounded-xl bg-card-green border border-white/5 overflow-hidden flex flex-col flex-1 min-h-0 shadow-sm">
+          <div class="p-4 border-b border-white/5 shrink-0">
+            <h2 class="text-base font-semibold text-white">Zone Occupancy Distribution</h2>
+          </div>
 
-              <div class="flex-1 p-4 min-h-0">
-                <div class="relative w-full h-full min-h-[160px]">
-                  <canvas id="pieChart2" class="absolute inset-0 w-full h-full"></canvas>
-                </div>
-                <p class="mt-2 text-xs text-muted">Live (last 60s)</p>
-              </div>
+          <div class="flex-1 p-4 flex flex-col min-h-0">
+            <!-- ثابتة عشان ما تكبر -->
+            <div class="relative w-full" style="height:190px;">
+              <canvas id="pieChart2" class="absolute inset-0 w-full h-full"></canvas>
             </div>
+
+            <div id="pieChart2-legend" class="mt-3 space-y-1 text-xs text-white/90"></div>
+            <p class="mt-2 text-xs text-muted">Live (last 60s)</p>
+          </div>
+        </div>
 
 
               <!-- Peak times line -->
@@ -347,8 +351,6 @@
 
 
   <!-- <script src="../static/js/main.js"></script> -->
-   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
   <script type="module" src="../static/js/main.js"></script>
 
 </body>

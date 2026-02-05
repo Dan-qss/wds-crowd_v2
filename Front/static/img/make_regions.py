@@ -3,10 +3,10 @@ import numpy as np
 import json
 import os
 
-IMAGE_PATH = r"D:\wds-crowd_v2\Front\static\img\map.png"
-OUT_JSON   = r"D:\wds-crowd_v2\Front\static\img\regions.json"
-OUT_NPZ    = r"D:\wds-crowd_v2\Front\static\img\masks.npz"
-OUT_MASK_DIR = r"D:\wds-crowd_v2\Front\static\img\masks"
+IMAGE_PATH = r"/var/www/html/crowd_management/Front/static/img/map3.png"
+OUT_JSON   = r"/var/www/html/crowd_management/Front/static/img/regions.json"
+OUT_NPZ    = r"/var/www/html/crowd_management/Front/static/img/masks.npz"
+OUT_MASK_DIR = r"/var/www/html/crowd_management/Front/static/img/masks"
 NUM_ZONES = 5
 
 # عرض النافذة (فقط للعرض)

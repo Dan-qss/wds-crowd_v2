@@ -1,7 +1,7 @@
 // static/js/face-list-manager.js
 export default class FaceListManager {
   constructor({
-    baseUrl = "http://192.168.101.124:8020",
+    baseUrl = "http://192.168.8.128:8020",
     limit = 8,
     pollMs = 1500,
     containerSelector = ".facelist-container",

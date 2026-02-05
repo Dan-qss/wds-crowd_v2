@@ -3,78 +3,30 @@ export default class PieChartDynamicManager {
   constructor({
     crowdApiBase,
     canvasId = "pieChart2",
-    updateMs = 2000,
+    legendId = "pieChart2-legend",
+    updateMs = 8000,
     windowSeconds = 60,
   } = {}) {
     this.base = (crowdApiBase || "").replace(/\/$/, "");
-    this.canvasId = canvasId;
+    this.canvas = document.getElementById(canvasId);
+    this.legendEl = document.getElementById(legendId);
+
     this.updateMs = updateMs;
     this.windowSeconds = windowSeconds;
 
-    this.chart = null;
     this.timer = null;
-    this.mockMode = true;
-    this.mockZonesCount = 4;   // عدد مناطق وهمي مؤقت
 
-    this._initChart();
-  }
+    // mock default
+    this.mockZonesCount = 4;
 
-  _initChart() {
-    const canvas = document.getElementById(this.canvasId);
-    if (!canvas) {
-      console.error("Pie chart canvas not found:", this.canvasId);
+    if (!this.canvas) {
+      console.error("Pie canvas not found:", canvasId);
       return;
     }
-    const ctx = canvas.getContext("2d");
+    this.ctx = this.canvas.getContext("2d");
 
-    this.chart = new Chart(ctx, {
-      type: "doughnut",
-      data: {
-        labels: [],
-        datasets: [
-          {
-            data: [],
-            borderWidth: 0,
-            hoverOffset: 4,
-            backgroundColor: [],
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: "65%",
-        plugins: {
-          legend: {
-            position: "right",
-            labels: {
-              color: "#fff",
-              font: { size: 10, family: "'Segoe UI', sans-serif" },
-              usePointStyle: true,
-              pointStyle: "circle",
-              padding: 10,
-              generateLabels: (chart) => {
-                const data = chart.data;
-                const vals = data.datasets?.[0]?.data || [];
-                return (data.labels || []).map((label, i) => ({
-                  text: `${label} ${Number(vals[i] || 0).toFixed(1)}%`,
-                  fillStyle: data.datasets[0].backgroundColor[i],
-                  hidden: false,
-                  index: i,
-                  fontColor: "#fff",
-                }));
-              },
-            },
-          },
-          tooltip: {
-            enabled: true,
-            callbacks: {
-              label: (context) => `${context.label}: ${Number(context.parsed).toFixed(1)}%`,
-            },
-          },
-        },
-      },
-    });
+    window.addEventListener("resize", () => this._redrawLast());
+    this._last = null;
   }
 
   start() {
@@ -90,73 +42,129 @@ export default class PieChartDynamicManager {
 
   destroy() {
     this.stop();
-    if (this.chart) this.chart.destroy();
-    this.chart = null;
   }
 
-async updateLatestData() {
-  if (!this.chart) return;
-
-  // إذا ما في API base أصلاً → mock
-  if (!this.base) {
-    this._applyMockData();
-    return;
-  }
-
-  const end = new Date();
-  const start = new Date(end.getTime() - this.windowSeconds * 1000);
-
-  const url =
-    `${this.base}/analysis/zone-occupancy?start_time=${encodeURIComponent(this._fmt(start))}` +
-    `&end_time=${encodeURIComponent(this._fmt(end))}`;
-
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-
-    const labelsRaw = data?.chart_data?.labels || [];
-    const valuesRaw = data?.chart_data?.values || [];
-
-    // إذا رجع فاضي (مثلاً DB فاضية) خليه mock لسه
-    if (!labelsRaw.length || !valuesRaw.length) {
-      this._applyMockData();
-      return;
+  async updateLatestData() {
+    // إذا API base مش موجود أو fetch فشل → mock
+    if (!this.base) {
+      return this._applyMockData();
     }
 
-    // ✅ صار عندنا داتا حقيقية → نطفي mock mode
-    this.mockMode = false;
+    const end = new Date();
+    const start = new Date(end.getTime() - this.windowSeconds * 1000);
 
-    const labels = labelsRaw.map(this._prettifyZoneName);
-    const values = valuesRaw.map(v => Number(v) || 0);
+    const url =
+      `${this.base}/analysis/zone-occupancy?start_time=${encodeURIComponent(this._fmt(start))}` +
+      `&end_time=${encodeURIComponent(this._fmt(end))}`;
 
-    this.chart.data.labels = labels;
-    this.chart.data.datasets[0].data = values;
-    this.chart.data.datasets[0].backgroundColor = this._makeColors(labels.length);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
 
-    this.chart.update();
-  } catch (e) {
-    // ✅ أي فشل بالـ API → mock data
-    this._applyMockData();
+      const labelsRaw = data?.chart_data?.labels || [];
+      const valuesRaw = data?.chart_data?.values || [];
+
+      // لو الداتا فاضية كمان mock
+      if (!labelsRaw.length || !valuesRaw.length) {
+        return this._applyMockData();
+      }
+
+      const labels = labelsRaw.map(this._pretty);
+      const values = valuesRaw.map((v) => Number(v) || 0);
+
+      this._draw(labels, values);
+    } catch (e) {
+      this._applyMockData();
+    }
   }
-}
 
-_applyMockData() {
-  // خليها تضل تتحرك “smooth” كل تحديث
-  const zones = Array.from({ length: this.mockZonesCount }, (_, i) => `Zone ${i + 1}`);
+  _applyMockData() {
+    const labels = Array.from({ length: this.mockZonesCount }, (_, i) => `Zone ${i + 1}`);
 
-  // توليد نسب مجموعها 100%
-  const raw = zones.map(() => Math.random());
-  const sum = raw.reduce((a, b) => a + b, 0) || 1;
-  const values = raw.map(v => (v / sum) * 100);
+    // نسب مجموعها 100
+    const raw = labels.map(() => Math.random());
+    const sum = raw.reduce((a, b) => a + b, 0) || 1;
+    const values = raw.map((v) => (v / sum) * 100);
 
-  this.chart.data.labels = zones;
-  this.chart.data.datasets[0].data = values;
-  this.chart.data.datasets[0].backgroundColor = this._makeColors(zones.length);
+    this._draw(labels, values);
+  }
 
-  this.chart.update();
-}
+  _redrawLast() {
+    if (this._last) this._draw(this._last.labels, this._last.values);
+  }
 
+  _draw(labels, values) {
+    this._last = { labels, values };
+
+    // resize canvas to fit box
+    const w = this.canvas.clientWidth || 260;
+    const h = this.canvas.clientHeight || 160;
+    this.canvas.width = w;
+    this.canvas.height = h;
+
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, w, h);
+
+    const total = values.reduce((a, b) => a + b, 0) || 1;
+    const colors = this._colors(labels.length);
+
+    // donut geometry
+    const cx = w / 2;
+    const cy = h / 2;
+    const rOuter = Math.min(w, h) * 0.42;
+    const rInner = rOuter * 0.65;
+
+    let angle = -Math.PI / 2; // start at top
+
+    for (let i = 0; i < values.length; i++) {
+      const slice = (values[i] / total) * Math.PI * 2;
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, rOuter, angle, angle + slice);
+      ctx.closePath();
+      ctx.fillStyle = colors[i];
+      ctx.fill();
+
+      angle += slice;
+    }
+
+    // inner cutout
+    ctx.beginPath();
+    ctx.arc(cx, cy, rInner, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.fill();
+
+    // center text (sum should be 100 تقريبًا)
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.font = "bold 14px Segoe UI, Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Zones", cx, cy - 9);
+
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.font = "12px Segoe UI, Arial";
+    ctx.fillText("Live", cx, cy + 10);
+
+    // legend
+    if (this.legendEl) {
+      this.legendEl.innerHTML = labels
+        .map((l, i) => {
+          const v = Number(values[i] || 0).toFixed(1);
+          return `
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2 min-w-0">
+                <span style="background:${colors[i]};" class="inline-block w-3 h-3 rounded-sm shrink-0"></span>
+                <span class="truncate">${l}</span>
+              </div>
+              <span class="tabular-nums text-white/80">${v}%</span>
+            </div>
+          `;
+        })
+        .join("");
+    }
+  }
 
   _fmt(d) {
     const pad = (n) => String(n).padStart(2, "0");
@@ -165,28 +173,19 @@ _applyMockData() {
     )}:${pad(d.getSeconds())}`;
   }
 
-  _prettifyZoneName(z) {
+  _pretty(z) {
     return String(z || "")
       .replace(/[-_]+/g, " ")
       .trim()
       .replace(/\b\w/g, (c) => c.toUpperCase());
   }
 
-  _makeColors(n) {
+  _colors(n) {
     const palette = [
-      "#4CAF50",
-      "#2196F3",
-      "#FFC107",
-      "#9C27B0",
-      "#00BCD4",
-      "#FF5722",
-      "#8BC34A",
-      "#E91E63",
-      "#3F51B5",
-      "#CDDC39",
+      "#4CAF50", "#2196F3", "#FFC107", "#9C27B0",
+      "#00BCD4", "#FF5722", "#8BC34A", "#E91E63",
+      "#3F51B5", "#CDDC39",
     ];
-    const out = [];
-    for (let i = 0; i < n; i++) out.push(palette[i % palette.length]);
-    return out;
+    return Array.from({ length: n }, (_, i) => palette[i % palette.length]);
   }
 }

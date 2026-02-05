@@ -55,8 +55,14 @@ def make_channel():
 
 
 class OptimizedCameraClient:
-    def __init__(self, camera_ids=["1", "2", "3", "4", "5"]):
-        self.camera_ids = camera_ids
+    def __init__(self):
+        # Cameras per model
+        self.MODEL1_CAMERA_IDS = ["1", "2", "3", "4", "5"]
+        self.MODEL2_CAMERA_IDS = ["10", "11"]
+
+        # Union (stream + websocket)
+        self.camera_ids = self.MODEL1_CAMERA_IDS + self.MODEL2_CAMERA_IDS
+
         self.running = True
         self.threads = []
 
@@ -71,13 +77,12 @@ class OptimizedCameraClient:
         }
 
         # Queues (one per camera)
-        self.camera_queues = {
-            cam_id: Queue(maxsize=1) for cam_id in camera_ids
-        }
+        self.camera_queues = {cam_id: Queue(maxsize=1) for cam_id in self.camera_ids}
 
         # Models
-        self.model = Model1(self.db)
+        self.model1 = Model1(self.db)
         self.model2 = Model2()
+
 
     def _get_camera_info(self, camera_id: str):
         # Avoid querying DB in every loop (but refresh if needed later)
@@ -150,19 +155,31 @@ class OptimizedCameraClient:
                     if camera_info:
                         zone_name = camera_info.get("zone_name") or camera_info.get("name") or "Unknown"
 
-                    cap = self.camera_capacities.get(camera_id, 0)
+                    # Default payload for websocket
+                    data = {"name": zone_name}
 
-                    processed_frame, data = self.model.process(frame, camera_id, cap)
+                    # Route to Model1 only
+                    if camera_id in self.MODEL1_CAMERA_IDS:
+                        cap = self.camera_capacities.get(camera_id, 0)
+                        processed_frame, model1_data = self.model1.process(frame, camera_id, cap)
 
-                    # Face/other model
-                    self.model2.process(frame, camera_id, zone_name)
+                        if isinstance(model1_data, dict):
+                            model1_data.update({"name": zone_name})
+                            data = model1_data
 
-                    if isinstance(data, dict):
-                        data.update({'name': zone_name})
+                        websocket_streamer.update_frame(camera_id, processed_frame, data)
+
+                    # Route to Model2 only
+                    elif camera_id in self.MODEL2_CAMERA_IDS:
+                        processed_frame = self.model2.process(frame, camera_id, zone_name)
+
+                        # Model2 currently doesn't return structured "data" for websocket,
+                        # so we just send the frame + zone name
+                        websocket_streamer.update_frame(camera_id, processed_frame, data)
+
                     else:
-                        data = {'name': zone_name}
-
-                    websocket_streamer.update_frame(camera_id, processed_frame, data)
+                        # If any unexpected camera shows up, just forward it raw
+                        websocket_streamer.update_frame(camera_id, frame, data)
 
                 time.sleep(0.001)
 
@@ -175,15 +192,14 @@ class OptimizedCameraClient:
         except Exception:
             pass
 
+
     def run(self):
         try:
-            # Start gRPC stream threads
             for camera_id in self.camera_ids:
                 t = Thread(target=self.start_camera_stream, args=(camera_id,), daemon=True)
                 t.start()
                 self.threads.append(t)
 
-            # Start processing thread
             pt = Thread(target=self.process_frames, daemon=True)
             pt.start()
             self.threads.append(pt)
@@ -198,6 +214,7 @@ class OptimizedCameraClient:
             self.running = False
         finally:
             self.cleanup()
+
 
     def cleanup(self):
         self.running = False

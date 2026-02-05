@@ -16,17 +16,18 @@
         this.layer.className = "heat-soft-layer";
         this.layer.setAttribute("aria-hidden", "true");
 
-        // Make sure it's positioned correctly above the image
-        // but below labels if you use ZoneMasksManager on .heatmap-overlay
         Object.assign(this.layer.style, {
           position: "absolute",
           inset: "0",
           pointerEvents: "none",
           overflow: "hidden",
-          // This gives the nice blended look like the designer image
-          mixBlendMode: "screen",
-          opacity: "0.9",
-          zIndex: "2", // image is behind; zone overlay can be above if needed
+
+          // ✅ أقل "نيون" من screen
+          mixBlendMode: "soft-light",
+
+          // ✅ عام
+          opacity: "0.95",
+          zIndex: "2",
         });
 
         // Insert before the existing .heatmap-overlay so SVG labels stay on top
@@ -36,33 +37,79 @@
       }
     }
 
+    // دمج نقاط قريبة (يساعد كثير مع الداتا الحقيقية)
+    _mergePoints(points) {
+      const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+      const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
+
+      // ✅ حجم خلية الشبكة: صغّريها إذا بدك تفاصيل أكثر، كبّريها إذا بدك نعومة أكثر
+      const cell = 0.04;
+
+      const buckets = new Map();
+
+      (points || []).forEach((p) => {
+        const x = clamp(num(p.x, 0.5), 0, 1);
+        const y = clamp(num(p.y, 0.5), 0, 1);
+        const r = clamp(num(p.r, 0.22), 0.06, 0.75);
+        const level = (p.level || "low").toLowerCase();
+
+        const gx = Math.round(x / cell);
+        const gy = Math.round(y / cell);
+        const key = `${gx},${gy},${level}`;
+
+        const cur = buckets.get(key) || { x: 0, y: 0, r: 0, n: 0, level };
+        cur.x += x;
+        cur.y += y;
+
+        // خذي أكبر r أساس، وبعدين كبّريه حسب كثافة النقاط
+        cur.r = Math.max(cur.r, r);
+
+        cur.n += 1;
+        buckets.set(key, cur);
+      });
+
+      const merged = [...buckets.values()].map((b) => {
+        const n = b.n || 1;
+        const scale = 1 + Math.log1p(n) * 0.35; // ✅ تكبير لطيف حسب الكثافة
+
+        return {
+          x: b.x / n,
+          y: b.y / n,
+          r: Math.min(0.75, b.r * scale),
+          level: b.level,
+          n,
+        };
+      });
+
+      return merged;
+    }
+
     update(points) {
       if (!this.layer) return;
 
       // Clear ONLY our heat layer (do not touch .heatmap-overlay)
       this.layer.innerHTML = "";
 
-      (points || []).forEach((p) => {
-        // const x = DashUtils.clamp(DashUtils.safeNum(p.x, 0.5), 0, 1);
-        // const y = DashUtils.clamp(DashUtils.safeNum(p.y, 0.5), 0, 1);
-        // const r = DashUtils.clamp(DashUtils.safeNum(p.r, 0.22), 0.06, 0.75);
-        const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-        const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
+      // ✅ دمج نقاط الداتا الحقيقية
+      const merged = this._mergePoints(points);
 
+      const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+      const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
+
+      (merged || []).forEach((p) => {
         const x = clamp(num(p.x, 0.5), 0, 1);
         const y = clamp(num(p.y, 0.5), 0, 1);
         const r = clamp(num(p.r, 0.22), 0.06, 0.75);
 
         const level = (p.level || "low").toLowerCase();
 
-        // Softer alpha to match the designer look (transparent, not solid)
-        // You can tweak alpha here if you want stronger/weaker.
+        // ✅ ألوان أهدى (RGBA) بدل RGB النيّون
         const color =
           level === "high"
-            ? "rgb(239, 68, 68)"
+            ? "rgba(239, 68, 68, 0.55)"
             : level === "moderate"
-            ? "rgb(234, 178, 8)"
-            : "rgb(34, 197, 94)";
+            ? "rgba(234, 178, 8, 0.50)"
+            : "rgba(34, 197, 94, 0.45)";
 
         const el = document.createElement("div");
         el.className = "heat-zone";
@@ -75,13 +122,14 @@
         el.style.height = `${r * 2 * 100}%`;
         el.style.borderRadius = "9999px";
 
-        // Designer-like soft spread + fade
-        el.style.background = `radial-gradient(ellipse 90% 85% at 50% 50%, ${color} 0%, rgba(0,0,0,0) 70%)`;
+        // ✅ تدرّج أطول عشان يصير أنعم
+        el.style.background = `radial-gradient(ellipse 90% 85% at 50% 50%, ${color} 0%, rgba(0,0,0,0) 88%)`;
 
-        // Blur/feather
-        el.style.filter = "blur(16px)"
+        // ✅ blur ديناميكي حسب الحجم (يعطي نعومة زي "الفيك")
+        const blurPx = Math.round(12 + r * 60);
+        el.style.filter = `blur(${blurPx}px)`;
 
-        // Slight extra softness so edges disappear nicely
+        // ✅ opacity ممكن تخفيفها شوي إذا لسه قوي
         el.style.opacity = "1";
 
         this.layer.appendChild(el);
