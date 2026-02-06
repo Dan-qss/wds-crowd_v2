@@ -5,6 +5,8 @@ import CameraManager from "./camera-manager.js";
 import FaceListManager from "./face-list-manager.js";
 import ZoneMasksManager from "./zone-masks-manager.js";
 import "./heatmap-manager.js"; // side-effect فقط
+import "./export-manager.js"; // ExportManager
+import "./date-range-manager.js"
 
 document.addEventListener("DOMContentLoaded", () => {
   // =========================
@@ -107,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const TopZonesManager = mod.default;
       topZones = new TopZonesManager({
         crowdApiBaseUrl: CONFIG.CROWD_API_BASE,
-        limit: 3,
+        limit: 5,
         metric: "percentage",
       });
       topZones.start();
@@ -125,16 +127,20 @@ document.addEventListener("DOMContentLoaded", () => {
       const mod = await import("./peakline-manager.js");
       const PeakLineManager = mod.default;
       peakLine = new PeakLineManager({
-        crowdApiBase: CONFIG.CROWD_API_BASE,
-        pollMs: CONFIG.POLL_MS?.PEAK_CHART ?? 5 * 60 * 1000,
-        startHour: 8,
-        endHour: 21,
+       crowdApiBase: CONFIG.CROWD_API_BASE,
+      pollMs: CONFIG.POLL_MS?.PEAK_CHART ?? 5 * 60 * 1000,
+      startHour: 8,
+      endHour: 17,
+      xTickEvery: 1,
+      yTickStep: 10,
+      mockOnce: true, 
       });
       peakLine.start();
     } catch (e) {
       console.error("PeakLine failed:", e);
     }
   })();
+
 
   // =========================
   // Face list
@@ -195,27 +201,48 @@ document.addEventListener("DOMContentLoaded", () => {
   // }, 3000);
 
   // =========================
-  // Pie chart (zone distribution) - local canvas (no Chart.js)
-  // =========================
-  let pieChart = null;
-  (async () => {
-    try {
-      const mod = await import("./piechart-dynamic-manager.js");
-      const PieChartDynamicManager = mod.default;
+// Bar chart (zone distribution) - local canvas (no Chart.js)
+// Updated hourly (avg of previous hour)
+// =========================
+    // let barChart = null;
+    // (async () => {
+    //   try {
+    //     const mod = await import("./barchart-dynamic-manager.js");
+    //     const BarChartDynamicManager = mod.default;
 
-      pieChart = new PieChartDynamicManager({
-        crowdApiBase: CONFIG.CROWD_API_BASE, // لوكل: http://127.0.0.1:8010
-        canvasId: "pieChart2",
-        legendId: "pieChart2-legend",
-        updateMs: 2000,
-        windowSeconds: 60,
-      });
+    //     barChart = new BarChartDynamicManager({
+    //       crowdApiBase: CONFIG.CROWD_API_BASE,
+    //       canvasId: "barChart2",
+    //       legendId: "barChart2-legend",
+    //       updateMs: 60 * 60 * 1000,     // كل ساعة
+    //       windowSeconds: 60 * 60,       // آخر ساعة
+    //       yMax: 100,                    // لو قيمك نسبة مئوية، خليها 100 (اختياري)
+    //     });
 
-      pieChart.start();
-    } catch (e) {
-      console.error("PieChart failed:", e);
-    }
-  })();
+    //     barChart.start();
+    //   } catch (e) {
+    //     console.error("BarChart failed:", e);
+    //   }
+    // })();
+
+
+  // Export Manager
+  const exportManager = new window.ExportManager("export-btn", CONFIG.CROWD_API_BASE);
+  exportManager.attach();
+
+  const dateRange = new window.DateRangeManager({
+  triggerId: "date-range-trigger",
+  pickerId: "date-range-picker",
+  displayId: "date-range-display",
+  fromId: "date-from",
+  toId: "date-to",
+  applyId: "date-range-apply",
+  onApply: ({ from, to }) => {
+    // اختياري: أي شغل بدك تعمليه لما يضغط Apply
+    console.log("Selected range:", from, to);
+  },
+});
+
 
   // =========================
   // Cleanup

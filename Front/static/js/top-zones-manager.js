@@ -1,22 +1,34 @@
 // static/js/top-zones-manager.js
 export default class TopZonesManager {
-  constructor({ crowdApiBaseUrl, debug = false, limit = 3, metric = "percentage" }) {
-    this.baseUrl = crowdApiBaseUrl.replace(/\/$/, "");
+  constructor({
+    crowdApiBaseUrl,
+    debug = false,
+    limit = 5,
+    metric = "percentage",
+    pollMs = 5 * 60 * 1000,     // Check periodically (e.g., every 5 minutes)
+    windowMs = 60 * 60 * 1000,  // Aggregate over the last full hour
+  }) {
+    this.baseUrl = (crowdApiBaseUrl || "").replace(/\/$/, "");
     this.debug = debug;
 
-    this.limit = limit;          // أعلى كم منطقة نعرض
-    this.metric = metric;        // "percentage" أو "people"
+    this.limit = limit;    // How many top zones to show
+    this.metric = metric;  // "percentage" or "people"
 
     this.elList = document.getElementById("top-zones-list");
 
-    this.windowMs = 5 * 60 * 1000; // آخر 5 دقائق
+    this.pollMs = pollMs;
+    this.windowMs = windowMs;
+
     this.timer = null;
+
+    // Used to avoid re-fetching within the same completed hour bucket
+    this.lastCompletedHourKey = null;
   }
 
   start() {
     this.stop();
-    this.tick();
-    this.timer = setInterval(() => this.tick(), this.windowMs); // كل 5 دقائق
+    this.tick(true);
+    this.timer = setInterval(() => this.tick(false), this.pollMs);
   }
 
   stop() {
@@ -24,12 +36,21 @@ export default class TopZonesManager {
     this.timer = null;
   }
 
-  async tick() {
-    if (!this.elList) return;
+  async tick(force = false) {
+    if (!this.elList || !this.baseUrl) return;
 
     try {
-      const end = this.floorToMinute(new Date());
+      const now = new Date();
+
+      // "End" is the top of the current hour (e.g., 14:00:00).
+      // That means the last completed hour is [13:00, 14:00).
+      const end = this.floorToHour(now);
       const start = new Date(end.getTime() - this.windowMs);
+
+      // Build a stable key for the completed hour bucket
+      const hourKey = this.hourKey(end);
+      if (!force && this.lastCompletedHourKey === hourKey) return;
+      this.lastCompletedHourKey = hourKey;
 
       const startStr = this.formatYmdHm(start);
       const endStr = this.formatYmdHm(end);
@@ -47,18 +68,20 @@ export default class TopZonesManager {
         people: Number(z.total_people ?? 0),
       }));
 
-      // رتب حسب اللي بدك: نسبة أو عدد
+      // Sort by selected metric
       items.sort((a, b) => {
         if (this.metric === "people") return b.people - a.people;
-        return b.pct - a.pct; // default percentage
+        return b.pct - a.pct; // default: percentage
       });
 
       const top = items.slice(0, this.limit);
       this.render(top);
 
-      if (this.debug) console.log("[TopZones] top:", top, "range:", { startStr, endStr });
+      if (this.debug) {
+        console.log("[TopZones] updated (hour bucket):", { startStr, endStr, top });
+      }
     } catch (e) {
-      console.error("[TopZones] فشل:", e?.message || e);
+      console.error("[TopZones] failed:", e?.message || e);
       this.render([]);
     }
   }
@@ -95,17 +118,25 @@ export default class TopZonesManager {
     }
   }
 
+  // -------------------------
   // Helpers
+  // -------------------------
+
   async fetchJson(url) {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status} - ${url}`);
     return res.json();
   }
 
-  floorToMinute(d) {
+  floorToHour(d) {
     const x = new Date(d);
-    x.setSeconds(0, 0);
+    x.setMinutes(0, 0, 0);
     return x;
+  }
+
+  hourKey(d) {
+    // Key based on the hour boundary (end time), e.g., "2026-2-6-14"
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${d.getHours()}`;
   }
 
   formatYmdHm(d) {

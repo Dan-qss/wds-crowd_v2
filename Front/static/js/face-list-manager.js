@@ -1,7 +1,7 @@
 // static/js/face-list-manager.js
 export default class FaceListManager {
   constructor({
-    baseUrl = "http://192.168.8.128:8020",
+    baseUrl = "http://192.168.1.11:8020",
     limit = 8,
     pollMs = 1500,
     containerSelector = ".facelist-container",
@@ -59,7 +59,7 @@ export default class FaceListManager {
     data.forEach((row) => {
       const personNameRaw = row.person_name || "unknown";
       const personName = this.formatName(personNameRaw);
-      const zone = this.formatName(row.zone || "");
+    
       const position = row.position || "";
       const time = this.formatDateTime(row.timestamp);
       const badge = this.statusBadge(row.status);
@@ -84,7 +84,7 @@ export default class FaceListManager {
           <p class="font-medium text-sm text-white truncate">${personName}</p>
           <p class="text-xs text-white/70 truncate">${position}</p>
           <p class="text-xs text-white/70 truncate">${time}</p>
-          <p class="text-xs text-white/70 truncate">${zone}</p>
+          
           <p class="text-sm font-medium ${badge.color}">${badge.text}</p>
         </div>
 

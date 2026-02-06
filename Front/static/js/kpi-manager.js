@@ -4,38 +4,38 @@ export default class KPIManager {
     this.baseUrl = crowdApiBaseUrl.replace(/\/$/, "");
     this.debug = debug;
 
-    // مؤقتات التحديث
-    this.totalTimer = null; // كل دقيقة
-    this.zoneTimer = null;  // كل دقيقة (zone)
-    this.occTimer = null;   // كل 5 دقائق (Avg last 5 min)
+    // Update timers
+    this.totalTimer = null; // every minute
+    this.zoneTimer = null;  // every minute (zone)
+    this.occTimer = null;   // every 5 minutes (Avg last 5 min)
 
-    // عناصر الواجهة
+    // UI elements
     this.elTotal = document.getElementById("kpi-total");
     this.elZone = document.getElementById("kpi-zone");
     this.elOccupancy = document.getElementById("kpi-occupancy");
 
-    // السطر اللي تحت Current Total (إذا بدك تحطيه JS بدل HTML)
+    // The line under "Current Total" (if you want to set it via JS instead of HTML)
     this.totalTrendLine = this.findTrendLineAfter(this.elTotal);
 
-    // السطر اللي تحت Average Occupancy
+    // The line under "Average Occupancy"
     this.occTrendLine = this.findTrendLineAfter(this.elOccupancy);
 
-    // إعدادات Average Occupancy (آخر 5 دقائق)
-    this.occWindowMs = 5 * 60 * 1000; // 5 دقائق
+    // Average Occupancy settings (last 5 minutes)
+    this.occWindowMs = 5 * 60 * 1000; // 5 minutes
   }
 
   start() {
     this.stop();
 
-    // 1) Current Total كل دقيقة
+    // 1) Current Total every minute
     this.tickTotal();
     this.totalTimer = setInterval(() => this.tickTotal(), 60 * 1000);
 
-    // 2) Most Crowded Zone كل دقيقة
+    // 2) Most Crowded Zone every minute
     this.tickZone();
     this.zoneTimer = setInterval(() => this.tickZone(), 60 * 1000);
 
-    // 3) Average Occupancy (آخر 5 دقائق) من DB - تحديث كل 5 دقائق
+    // 3) Average Occupancy (last 5 minutes) from DB - update every 5 minutes
     this.tickOccupancyLast5Min();
     this.occTimer = setInterval(() => this.tickOccupancyLast5Min(), this.occWindowMs);
   }
@@ -51,7 +51,7 @@ export default class KPIManager {
   }
 
   // -------------------------
-  // Current Total (كل دقيقة)
+  // Current Total (every minute)
   // -------------------------
   async tickTotal() {
     try {
@@ -60,17 +60,17 @@ export default class KPIManager {
 
       if (this.elTotal) this.elTotal.textContent = totalPeople.toLocaleString();
 
-      // إذا بدك تفرض النص من JS بدل HTML:
+      // If you want to force the trend text via JS instead of HTML:
       // this.setTrendTextOnly(this.totalTrendLine, "Live - Across all monitored zones");
 
       if (this.debug) console.log("[KPI] total_people:", totalPeople);
     } catch (e) {
-      console.error("[KPI] Current Total فشل:", e?.message || e);
+      console.error("[KPI] Current Total failed:", e?.message || e);
     }
   }
 
   // ----------------------------------------
-  // Most Crowded Zone (كل دقيقة)
+  // Most Crowded Zone (every minute)
   // ----------------------------------------
   async tickZone() {
     try {
@@ -81,19 +81,19 @@ export default class KPIManager {
 
       if (this.debug) console.log("[KPI] top_zone:", top);
     } catch (e) {
-      console.error("[KPI] Most Crowded Zone فشل:", e?.message || e);
+      console.error("[KPI] Most Crowded Zone failed:", e?.message || e);
     }
   }
 
   // --------------------------------------------
-  // Average Occupancy (آخر 5 دقائق) من DB
-  // يعتمد على API: /analysis/zone-occupancy?start_time=...&end_time=...
+  // Average Occupancy (last 5 minutes) from DB
+  // Uses API: /analysis/zone-occupancy?start_time=...&end_time=...
   // --------------------------------------------
   async tickOccupancyLast5Min() {
     if (!this.elOccupancy) return;
 
     try {
-      const end = this.floorToMinute(new Date()); // الدقيقة الحالية (00 ثانية)
+      const end = this.floorToMinute(new Date()); // current minute (seconds = 00)
       const start = new Date(end.getTime() - this.occWindowMs);
 
       const startStr = this.formatYmdHm(start);
@@ -128,14 +128,14 @@ export default class KPIManager {
         });
       }
     } catch (e) {
-      console.error("[KPI] Occupancy آخر 5 دقائق فشل:", e?.message || e);
+      console.error("[KPI] Occupancy last 5 minutes failed:", e?.message || e);
       this.elOccupancy.textContent = "--%";
       this.setTrendTextOnly(this.occTrendLine, "Avg (last 5 min)");
     }
   }
 
   // -------------------------
-  // حساب أكثر Zone ازدحامًا
+  // Compute the most crowded zone
   // -------------------------
   computeTopZone(measurements) {
     if (!Array.isArray(measurements) || measurements.length === 0) return null;
@@ -155,7 +155,7 @@ export default class KPIManager {
   }
 
   // -------------------------
-  // أدوات DOM بسيطة
+  // Simple DOM helpers
   // -------------------------
   findTrendLineAfter(valueEl) {
     if (!valueEl) return null;
@@ -183,14 +183,14 @@ export default class KPIManager {
     return res.json();
   }
 
-  // تقطيع الوقت لأول دقيقة (ثواني وميلي ثانية = 0)
+  // Floor time to the minute (seconds and ms = 0)
   floorToMinute(d) {
     const x = new Date(d);
     x.setSeconds(0, 0);
     return x;
   }
 
-  // صيغة API: "YYYY-MM-DD HH:MM"
+  // API format: "YYYY-MM-DD HH:MM"
   formatYmdHm(d) {
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");

@@ -1,10 +1,17 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, Response
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict
 from pydantic import BaseModel, Field
 import uvicorn
+import json
+import logging
 from crowd_data_fetcher import CrowdDataFetcher
+from pdf_report_generator import PDFReportGenerator
+
+logger = logging.getLogger(__name__)
+pdf_generator = PDFReportGenerator()
 
 app = FastAPI(
     title="Crowd Management API",
@@ -204,6 +211,76 @@ async def peak_so_far_today(
     end_hour: int = Query(19, ge=0, le=23),
 ):
     return crowd_fetcher.get_peak_so_far_today_all_zones(start_hour=start_hour, end_hour=end_hour)
+
+@app.get("/reports/generate")
+async def generate_report(
+    start_date: str = Query(..., description="Start date (YYYY-MM-DD)"),
+    end_date: str = Query(..., description="End date (YYYY-MM-DD)"),
+    format: str = Query("pdf", description="Report format: json, pdf, or html")
+):
+    """
+    Generate comprehensive crowd management report for a date range
+    
+    - **start_date**: Start date in YYYY-MM-DD format
+    - **end_date**: End date in YYYY-MM-DD format  
+    - **format**: Output format (json, pdf, html)
+    
+    Returns a comprehensive report with:
+    - Executive summary
+    - Daily statistics
+    - Zone analysis
+    - Camera analysis
+    - Comparative analysis (for multi-day reports)
+    - Insights and recommendations
+    - Data quality metrics
+    """
+    try:
+        if end_date < start_date:
+            raise HTTPException(status_code=400, detail="end_date must be >= start_date")
+        
+        camera_names = {
+            "1": "In- Fixar aircraft",
+            "2": "In - V-BAT aircraft",
+            "3": "Ex- Drones",
+            "4": "Ex- Barista Robot",
+            "5": "Ex - FlyNow"
+        }
+        
+        report_data = crowd_fetcher.generate_report_data(start_date, end_date, camera_names)
+        
+        if format.lower() == "json":
+            return JSONResponse(content=report_data)
+        elif format.lower() == "pdf":
+            try:
+                pdf_buffer = pdf_generator.generate_pdf(report_data)
+                report_type = "daily" if start_date == end_date else "multi_day"
+                filename = f"crowd_report_{report_type}_{start_date}_{end_date}.pdf"
+                
+                return Response(
+                    content=pdf_buffer.getvalue(),
+                    media_type="application/pdf",
+                    headers={
+                        "Content-Disposition": f'attachment; filename="{filename}"'
+                    }
+                )
+            except Exception as e:
+                logger.error(f"Error generating PDF: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"Error generating PDF: {str(e)}")
+        elif format.lower() == "html":
+            return JSONResponse(
+                content={"message": "HTML format not yet implemented", "data": report_data},
+                status_code=501
+            )
+        else:
+            return JSONResponse(content=report_data)
+            
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid date format: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error generating report: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
 
 
 if __name__ == "__main__":

@@ -4,8 +4,11 @@ export default class PeakLineManager {
     crowdApiBase,
     pollMs = 5 * 60 * 1000, // كل 5 دقائق نتحقق إذا دخلنا ساعة جديدة
     startHour = 8,
-    endHour = 21, // 9pm
+    endHour = 17, // 5pm
     debug = false,
+    yTickStep = 10,        // 10 أو 20
+    xTickEvery = 1,        // 1 = كل ساعة (9 10 11 ..) | 2 = كل ساعتين (9 11 1 3 5)
+     mockOnce = false, // NEW
   } = {}) {
     this.base = (crowdApiBase || "").replace(/\/$/, "");
     this.pollMs = pollMs;
@@ -16,6 +19,9 @@ export default class PeakLineManager {
     this.canvas = document.getElementById("peak-chart");
     this.ctx = this.canvas ? this.canvas.getContext("2d") : null;
 
+    this.yTickStep = yTickStep;
+    this.xTickEvery = xTickEvery;
+    this.mockOnce = mockOnce;
     this.timer = null;
     this.lastBuiltForDate = null;
     this.lastCompletedHour = null; // آخر ساعة مكتملة رسمناها
@@ -25,10 +31,23 @@ export default class PeakLineManager {
     window.addEventListener("resize", () => this._redrawLast());
   }
 
+
   start() {
     this.stop();
-    this.refresh(true);
-    this.timer = setInterval(() => this.refresh(false), this.pollMs);
+
+  if (this.mockOnce) {
+    const labels = ["9", "10", "11", "12", "1", "2", "3", "4", "5"];
+    const values = [62, 66, 67, 65, 84, 85, 90, 89, 86];
+
+    this._last = { labels, values };
+    this.draw(labels, values);
+
+    // Do NOT start polling in mock mode (keeps it fixed)
+    return;
+  }
+
+  this.refresh(true);
+  this.timer = setInterval(() => this.refresh(false), this.pollMs);
   }
 
   stop() {
@@ -110,14 +129,13 @@ export default class PeakLineManager {
   _redrawLast() {
     if (this._last) this.draw(this._last.labels, this._last.values);
   }
-
   draw(labels, values) {
     const canvas = this.canvas;
     const ctx = this.ctx;
 
     // match css size
     const w = canvas.clientWidth || 300;
-    const h = canvas.clientHeight || 120;
+    const h = canvas.clientHeight || 140;
     canvas.width = w;
     canvas.height = h;
 
@@ -131,52 +149,105 @@ export default class PeakLineManager {
       return;
     }
 
-    const padding = 12;
-    const plotW = w - padding * 2;
-    const plotH = h - padding * 2 - 14;
+    // Padding (left أكبر عشان أرقام الـ Y)
+    const padL = 36;
+    const padR = 12;
+    const padT = 12;
+    const padB = 22;
 
-    const xStep = plotW / (values.length - 1);
-    const yFor = (v) => {
-      const t = v / 100; // 0..1
-      return padding + (1 - t) * plotH;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+
+    const xForIndex = (i) => padL + (plotW * i) / (values.length - 1);
+    const yForValue = (v) => {
+      const t = Math.max(0, Math.min(100, v)) / 100; // clamp 0..1
+      return padT + (1 - t) * plotH;
     };
 
-    // Line
-    ctx.beginPath();
-    ctx.moveTo(padding, yFor(values[0]));
-    for (let i = 1; i < values.length; i++) {
-      ctx.lineTo(padding + i * xStep, yFor(values[i]));
+    // ===== Grid + Y ticks =====
+    const step = this.yTickStep || 10; // 10 أو 20
+    ctx.lineWidth = 1;
+    ctx.font = "10px Inter, Arial";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+
+    for (let yv = 0; yv <= 100; yv += step) {
+      const y = yForValue(yv);
+
+      // grid line
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(w - padR, y);
+      ctx.stroke();
+
+      // y label
+      ctx.fillStyle = "rgba(226,232,240,0.65)";
+      ctx.fillText(`${yv}%`, padL - 6, y);
     }
-    ctx.strokeStyle = "rgba(34,197,94,1)";
-    ctx.lineWidth = 2;
+
+    // ===== Axes =====
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth = 1.2;
+
+    // Y axis
+    ctx.beginPath();
+    ctx.moveTo(padL, padT);
+    ctx.lineTo(padL, h - padB);
     ctx.stroke();
 
-    // Points
+    // X axis
+    ctx.beginPath();
+    ctx.moveTo(padL, h - padB);
+    ctx.lineTo(w - padR, h - padB);
+    ctx.stroke();
+
+    // ===== Line =====
+    ctx.strokeStyle = "rgba(34,197,94,1)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(xForIndex(0), yForValue(values[0]));
+    for (let i = 1; i < values.length; i++) {
+      ctx.lineTo(xForIndex(i), yForValue(values[i]));
+    }
+    ctx.stroke();
+
+    // ===== Points =====
     ctx.fillStyle = "rgba(34,197,94,1)";
     for (let i = 0; i < values.length; i++) {
-      const x = padding + i * xStep;
-      const y = yFor(values[i]);
+      const x = xForIndex(i);
+      const y = yForValue(values[i]);
       ctx.beginPath();
-      ctx.arc(x, y, 2.8, 0, Math.PI * 2);
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // X labels (few)
-    ctx.fillStyle = "rgba(148,163,184,1)";
+    // ===== X labels =====
+    ctx.fillStyle = "rgba(148,163,184,0.95)";
     ctx.font = "10px Inter, Arial";
     ctx.textAlign = "center";
-    const ticks = Math.min(5, labels.length);
+    ctx.textBaseline = "top";
+
+    const every = this.xTickEvery || 1; // 1 أو 2
     for (let i = 0; i < labels.length; i++) {
-  const x = padding + i * xStep;
+      const show = (i % every === 0) || (i === labels.length - 1);
+      if (!show) continue;
 
-  // اعرض كل ساعتين، وبالإضافة اعرض 11:00 دائمًا
-  const isEleven = labels[i] === "11:00";
-  if (i % 1 === 0 || isEleven) {
-    ctx.fillText(labels[i], x, h - 2);
-  }
-}
+      const x = xForIndex(i);
 
+      // tick mark
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, h - padB);
+      ctx.lineTo(x, h - padB + 4);
+      ctx.stroke();
+
+      // label
+      ctx.fillText(labels[i], x, h - padB + 6);
+    }
   }
+
 
   async _fetchJson(url) {
     const res = await fetch(url);
@@ -200,8 +271,9 @@ export default class PeakLineManager {
   }
 
   _hourLabel(h) {
-    return `${String(h).padStart(2, "0")}:00`;
-  }
+  const hh = h % 12 === 0 ? 12 : h % 12;
+    return String(hh); 
+ }
 
   _dateKey(d) {
     return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
