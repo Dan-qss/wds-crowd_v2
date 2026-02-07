@@ -219,13 +219,7 @@ class PDFReportGenerator:
             
             summary = day_stat.get('summary', {})
             
-            max_people_most_crowded = 0
-            if most_crowded_zone:
-                zone_name = most_crowded_zone.get('zone_name', '')
-                for zone in report_data.get('zone_analysis', []):
-                    if zone.get('zone_name') == zone_name:
-                        max_people_most_crowded = zone.get('max_people', 0)
-                        break
+            max_people_most_crowded = most_crowded_zone.get('max_people', 0) if most_crowded_zone else 0
             
             summary_row = [
                 ['Metric', 'Value'],

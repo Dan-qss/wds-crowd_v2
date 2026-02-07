@@ -1003,6 +1003,7 @@ class CrowdDataFetcher:
             most_crowded_zone = {
                 'zone_name': sorted_zones[0]['zone_name'],
                 'avg_percentage': sorted_zones[0]['avg_percentage'],
+                'max_people': sorted_zones[0].get('max_people', 0),
                 'peak_hour': sorted_zones[0]['peak_hours'][0]['hour'] if sorted_zones[0]['peak_hours'] else None
             }
             least_crowded_zone = {
