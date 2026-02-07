@@ -135,7 +135,7 @@ class PDFReportGenerator:
         date_info = [
             ['Report Period:', f"{date_range.get('start_date', 'N/A')} to {date_range.get('end_date', 'N/A')}"],
             ['Generated At:', metadata.get('generated_at', 'N/A')[:19].replace('T', ' ')],
-            ['Total Cameras:', str(metadata.get('total_cameras', 0))],
+            ['Total Cameras:', '7'],
             ['Total Zones:', '5'],
         ]
         
@@ -307,11 +307,12 @@ class PDFReportGenerator:
                 story.append(Spacer(1, 0.1*inch))
                 story.append(Paragraph("Camera Details", self.styles['BodyText']))
                 
-                cam_data = [['Camera ID', 'Area', 'Capacity', 'Avg %', 'Max People']]
+                cam_data = [['Camera ID', 'Zone', 'Capacity', 'Avg %', 'Max People']]
                 for cam in camera_details:
+                    zone_name = zone.get('zone_name', '').replace('_', ' ').title()
                     cam_data.append([
                         str(cam.get('camera_id', '')),
-                        cam.get('area_name', ''),
+                        zone_name,
                         str(cam.get('capacity', 0)),
                         f"{cam.get('avg_percentage', 0):.2f}%",
                         str(cam.get('max_people', 0))
