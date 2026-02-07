@@ -528,8 +528,29 @@ class CrowdDataFetcher:
                     ORDER BY hour
                 """, (start_time, end_time))
                 
-                results = []
+                hourly_rows = cur.fetchall()
+                
+                cur.execute("""
+                    SELECT 
+                        EXTRACT(HOUR FROM measured_at) as hour,
+                        MAX(total_at_time) as max_people_all_areas
+                    FROM (
+                        SELECT measured_at, EXTRACT(HOUR FROM measured_at) as hour, SUM(number_of_people) as total_at_time
+                        FROM crowd_measurements
+                        WHERE measured_at BETWEEN %s::timestamp AND %s::timestamp
+                        GROUP BY measured_at, EXTRACT(HOUR FROM measured_at)
+                    ) time_totals
+                    GROUP BY hour
+                    ORDER BY hour
+                """, (start_time, end_time))
+                
+                max_all_areas_by_hour = {}
                 for row in cur.fetchall():
+                    hour = int(row[0])
+                    max_all_areas_by_hour[hour] = int(row[1]) if row[1] else 0
+                
+                results = []
+                for row in hourly_rows:
                     hour = int(row[0])
                     results.append({
                         'hour': hour,
@@ -537,7 +558,7 @@ class CrowdDataFetcher:
                         'total_people': int(row[2]) if row[2] else 0,
                         'avg_people': round(float(row[3]) if row[3] else 0, 2),
                         'avg_percentage': round(float(row[4]) if row[4] else 0, 2),
-                        'max_people': int(row[5]) if row[5] else 0,
+                        'max_people': max_all_areas_by_hour.get(hour, 0),
                         'measurement_count': int(row[1]) if row[1] else 0
                     })
                 return results
@@ -575,6 +596,20 @@ class CrowdDataFetcher:
                 """, (start_time, end_time))
                 
                 row = cur.fetchone()
+                
+                cur.execute("""
+                    SELECT MAX(total_at_time) as max_people_all_areas
+                    FROM (
+                        SELECT measured_at, SUM(number_of_people) as total_at_time
+                        FROM crowd_measurements
+                        WHERE measured_at BETWEEN %s::timestamp AND %s::timestamp
+                        GROUP BY measured_at
+                    ) time_totals
+                """, (start_time, end_time))
+                
+                max_all_areas_row = cur.fetchone()
+                max_people_all_areas = int(max_all_areas_row[0]) if max_all_areas_row and max_all_areas_row[0] else 0
+                
                 if row and row[0]:
                     total_capacity = row[6] if row[6] else 0
                     total_people = row[1] if row[1] else 0
@@ -586,7 +621,7 @@ class CrowdDataFetcher:
                         'total_people': int(total_people),
                         'avg_people': round(float(row[2]) if row[2] else 0, 2),
                         'avg_percentage': round(float(row[3]) if row[3] else 0, 2),
-                        'max_people': int(row[4]) if row[4] else 0,
+                        'max_people': max_people_all_areas,
                         'max_percentage': round(float(row[5]) if row[5] else 0, 2),
                         'total_capacity': int(total_capacity),
                         'overall_occupancy_percentage': round(overall_percentage, 2)
@@ -771,13 +806,40 @@ class CrowdDataFetcher:
                 if not row or not row[0]:
                     return None
                 
+                cur.execute("""
+                    SELECT 
+                        EXTRACT(HOUR FROM measured_at) as hour,
+                        MAX(total_at_time) as max_total
+                    FROM (
+                        SELECT 
+                            measured_at,
+                            EXTRACT(HOUR FROM measured_at) as hour,
+                            SUM(number_of_people) as total_at_time
+                        FROM crowd_measurements
+                        WHERE zone_name = %s
+                        AND measured_at BETWEEN %s::timestamp AND %s::timestamp
+                        GROUP BY measured_at
+                    ) time_totals
+                    GROUP BY hour
+                    ORDER BY max_total DESC
+                    LIMIT 1
+                """, (zone_name, start_time, end_time))
+                
+                max_hour_row = cur.fetchone()
+                max_people_value = int(row[4]) if row[4] else 0
+                max_people_hour = int(max_hour_row[0]) if max_hour_row and max_hour_row[0] is not None else None
+                
+                if max_hour_row and max_hour_row[1]:
+                    max_people_value = int(max_hour_row[1])
+                
                 stats = {
                     'zone_name': zone_name,
                     'total_cameras': int(row[0]),
                     'total_capacity': int(row[1]) if row[1] else 0,
                     'total_measurements': int(row[2]),
                     'avg_people': round(float(row[3]) if row[3] else 0, 2),
-                    'max_people': int(row[4]) if row[4] else 0,
+                    'max_people': max_people_value,
+                    'max_people_hour': max_people_hour,
                     'avg_percentage': round(float(row[5]) if row[5] else 0, 2),
                     'max_percentage': round(float(row[6]) if row[6] else 0, 2)
                 }

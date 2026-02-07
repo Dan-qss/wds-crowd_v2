@@ -209,16 +209,30 @@ class PDFReportGenerator:
         
         story.append(Paragraph("Daily Statistics", self.styles['SectionHeader']))
         
+        executive_summary = report_data.get('executive_summary', {})
+        most_crowded_zone = executive_summary.get('most_crowded_zone', {})
+        most_crowded_zone_name = most_crowded_zone.get('zone_name', '').replace('_', ' ').title() if most_crowded_zone else 'N/A'
+        
         for day_stat in daily_stats:
             date = day_stat.get('date', '')
             story.append(Paragraph(f"Date: {date}", self.styles['SubsectionHeader']))
             
             summary = day_stat.get('summary', {})
+            
+            max_people_most_crowded = 0
+            if most_crowded_zone:
+                zone_name = most_crowded_zone.get('zone_name', '')
+                for zone in report_data.get('zone_analysis', []):
+                    if zone.get('zone_name') == zone_name:
+                        max_people_most_crowded = zone.get('max_people', 0)
+                        break
+            
             summary_row = [
                 ['Metric', 'Value'],
                 ['Total People', f"{summary.get('total_people', 0):,}"],
                 ['Average Occupancy %', f"{summary.get('avg_percentage', 0):.2f}%"],
-                ['Max People', f"{summary.get('max_people', 0)}"],
+                ['Max People (All Areas)', f"{summary.get('max_people', 0)}"],
+                ['Max People in Most Crowded Zone', f"{max_people_most_crowded} ({most_crowded_zone_name})"],
                 ['Max Occupancy %', f"{summary.get('max_percentage', 0):.2f}%"],
             ]
             
@@ -242,7 +256,7 @@ class PDFReportGenerator:
             if hourly_breakdown:
                 story.append(Paragraph("Hourly Breakdown", self.styles['SubsectionHeader']))
                 
-                hourly_data = [['Hour', 'Total People', 'Avg %', 'Max People']]
+                hourly_data = [['Hour', 'Total People', 'Avg %', 'Max People (All Areas)']]
                 for hour_data in hourly_breakdown[:14]:
                     hourly_data.append([
                         hour_data.get('hour_label', ''),
@@ -279,11 +293,17 @@ class PDFReportGenerator:
             zone_name = zone.get('zone_name', '').replace('_', ' ').title()
             story.append(Paragraph(f"Zone: {zone_name}", self.styles['SubsectionHeader']))
             
+            max_people = zone.get('max_people', 0)
+            max_people_hour = zone.get('max_people_hour')
+            max_people_display = f"{max_people}"
+            if max_people_hour is not None:
+                max_people_display = f"{max_people} (at {max_people_hour:02d}:00)"
+            
             zone_data = [
                 ['Metric', 'Value'],
                 ['Total Cameras', str(zone.get('total_cameras', 0))],
                 ['Total Capacity', f"{zone.get('total_capacity', 0):,}"],
-                ['Max People', str(zone.get('max_people', 0))],
+                ['Max People', max_people_display],
                 ['Average Occupancy %', f"{zone.get('avg_percentage', 0):.2f}%"],
                 ['Max Occupancy %', f"{zone.get('max_percentage', 0):.2f}%"],
             ]
