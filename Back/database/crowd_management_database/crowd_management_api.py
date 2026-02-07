@@ -239,11 +239,11 @@ async def generate_report(
             raise HTTPException(status_code=400, detail="end_date must be >= start_date")
         
         camera_names = {
-            "1": "In- Fixar aircraft",
+            "1": "Control Center",
             "2": "In - V-BAT aircraft",
             "3": "Ex- Drones",
             "4": "Ex- Barista Robot",
-            "5": "Ex - FlyNow"
+            "5": "Ex - FclyNow"
         }
         
         report_data = crowd_fetcher.generate_report_data(start_date, end_date, camera_names)

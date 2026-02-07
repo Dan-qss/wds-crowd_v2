@@ -1,7 +1,7 @@
 DB_CONFIG = {
     "dbname": "camera_system",
     "user": "postgres",
-    "password": "1998",
+    "password": "QSS2030QSS",
     "host": "localhost",
     "port": "5432"
 }

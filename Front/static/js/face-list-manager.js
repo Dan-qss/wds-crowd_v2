@@ -1,7 +1,7 @@
 // static/js/face-list-manager.js
 export default class FaceListManager {
   constructor({
-    baseUrl = "http://192.168.1.11:8020",
+    baseUrl = "http://192.168.8.130:8020",
     limit = 8,
     pollMs = 1500,
     containerSelector = ".facelist-container",
@@ -65,7 +65,7 @@ export default class FaceListManager {
       const badge = this.statusBadge(row.status);
 
       // إذا عندك صور للأشخاص مثل زمان: ../static/img/persons/{person}.png
-      const imgPath = `../static/img/persons/${personNameRaw}.png`;
+      const imgPath = `../static/img/persons/unknown.png`;
 
       const card = document.createElement("div");
       card.className =

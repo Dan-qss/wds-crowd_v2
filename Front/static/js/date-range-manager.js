@@ -9,9 +9,18 @@
       this.applyBtn = document.getElementById(applyId);
       this.onApply = onApply;
 
-      // Allowed range
+      // Allowed range (keep these as the permitted window)
       this.MIN_DATE = "2026-02-06";
       this.MAX_DATE = "2026-02-12";
+
+      // Compute today's date using local timezone and clamp it within allowed range so defaults use today
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const todayStr = `${yyyy}-${mm}-${dd}`; // YYYY-MM-DD (local)
+      const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+      const defaultDate = clamp(todayStr, this.MIN_DATE, this.MAX_DATE);
 
       // Apply constraints to inputs
       this.inputFrom.min = this.MIN_DATE;
@@ -19,12 +28,12 @@
       this.inputTo.min   = this.MIN_DATE;
       this.inputTo.max   = this.MAX_DATE;
 
-      // Ensure current values are within range
-      if (!this.inputFrom.value || this.inputFrom.value < this.MIN_DATE) this.inputFrom.value = this.MIN_DATE;
+      // Ensure current values are within range; if empty, default to today (clamped)
+      if (!this.inputFrom.value || this.inputFrom.value < this.MIN_DATE) this.inputFrom.value = defaultDate;
       if (this.inputFrom.value > this.MAX_DATE) this.inputFrom.value = this.MAX_DATE;
 
-      if (!this.inputTo.value || this.inputTo.value > this.MAX_DATE) this.inputTo.value = this.MAX_DATE;
-      if (this.inputTo.value < this.MIN_DATE) this.inputTo.value = this.MIN_DATE;
+      if (!this.inputTo.value || this.inputTo.value > this.MAX_DATE) this.inputTo.value = defaultDate;
+      if (this.inputTo.value < this.MIN_DATE) this.inputTo.value = defaultDate;
 
 
       if (!this.trigger || !this.picker || !this.display || !this.inputFrom || !this.inputTo || !this.applyBtn) return;

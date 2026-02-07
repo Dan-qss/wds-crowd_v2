@@ -35,16 +35,16 @@ export default class PeakLineManager {
   start() {
     this.stop();
 
-  if (this.mockOnce) {
-    const labels = ["9", "10", "11", "12", "1", "2", "3", "4", "5"];
-    const values = [62, 66, 67, 65, 84, 85, 90, 89, 86];
+  // if (this.mockOnce) {
+  //   const labels = ["9", "10", "11", "12", "1", "2", "3", "4", "5"];
+  //   const values = [62, 66, 67, 65, 84, 85, 90, 89, 86];
 
-    this._last = { labels, values };
-    this.draw(labels, values);
+  //   this._last = { labels, values };
+  //   this.draw(labels, values);
 
-    // Do NOT start polling in mock mode (keeps it fixed)
-    return;
-  }
+  //   // Do NOT start polling in mock mode (keeps it fixed)
+  //   return;
+  // }
 
   this.refresh(true);
   this.timer = setInterval(() => this.refresh(false), this.pollMs);

@@ -17,13 +17,13 @@ document.addEventListener("DOMContentLoaded", () => {
     box1: {
       canvasId: "camera1",
       labelElId: "cam1-label",
-      rotateCameraIds: ["1", "2", "3"],
+      rotateCameraIds: ["1", "4", "5"],
       intervalMs: 5000,
     },
     box2: {
       canvasId: "camera2",
       labelElId: "cam2-label",
-      rotateCameraIds: ["4", "5"],
+      rotateCameraIds: ["2", "3"],
       intervalMs: 5000,
     },
   });

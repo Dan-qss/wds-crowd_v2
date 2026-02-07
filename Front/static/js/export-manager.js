@@ -1,6 +1,6 @@
 (function () {
   class ExportManager {
-    constructor(buttonId = "export-btn", apiBaseUrl = "http://192.168.1.11:8010") {
+    constructor(buttonId = "export-btn", apiBaseUrl = "http://192.168.8.130:8010") {
       this.btn = document.getElementById(buttonId);
       this.apiBaseUrl = apiBaseUrl;
     }
