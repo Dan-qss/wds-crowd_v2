@@ -209,24 +209,17 @@ class PDFReportGenerator:
         
         story.append(Paragraph("Daily Statistics", self.styles['SectionHeader']))
         
-        executive_summary = report_data.get('executive_summary', {})
-        most_crowded_zone = executive_summary.get('most_crowded_zone', {})
-        most_crowded_zone_name = most_crowded_zone.get('zone_name', '').replace('_', ' ').title() if most_crowded_zone else 'N/A'
-        
         for day_stat in daily_stats:
             date = day_stat.get('date', '')
             story.append(Paragraph(f"Date: {date}", self.styles['SubsectionHeader']))
             
             summary = day_stat.get('summary', {})
             
-            max_people_most_crowded = most_crowded_zone.get('max_people', 0) if most_crowded_zone else 0
-            
             summary_row = [
                 ['Metric', 'Value'],
                 ['Total People', f"{summary.get('total_people', 0):,}"],
                 ['Average Occupancy %', f"{summary.get('avg_percentage', 0):.2f}%"],
                 ['Max People (All Areas)', f"{summary.get('max_people', 0)}"],
-                ['Max People in Most Crowded Zone', f"{max_people_most_crowded} ({most_crowded_zone_name})"],
                 ['Max Occupancy %', f"{summary.get('max_percentage', 0):.2f}%"],
             ]
             
