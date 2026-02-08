@@ -88,7 +88,7 @@ class Model1:
             with torch.inference_mode():
                 roi_np = self.roi_cache.get(camera_id)
                 
-                results = self.model(frame, conf=0.60, verbose=False, classes=[0], device=0)
+                results = self.model(frame, conf=0.30, verbose=False, classes=[0], device=0)
                 
                 current_count = 0
                 boxes = results[0].boxes

@@ -5,11 +5,13 @@ export default class ZoneMasksManager {
     overlaySelector = ".heatmap-overlay",
     regionsJsonUrl = "../static/img/regions.json",
 
-    // شكل الماسك
-    fill = "rgba(0,0,0,0)",     // افتراضي: شفاف 100%
-    showBorders = true,         // خليها false إذا ما بدك حدود
+    fill = "rgba(0,0,0,0)",
+    showBorders = true,
     borderColor = "rgba(0,0,0,0.6)",
     borderWidth = 1.6,
+
+    // ✅ Debug: click to print zone id
+    enableClickDebug = true,
   } = {}) {
     this.containerId = containerId;
     this.overlaySelector = overlaySelector;
@@ -19,6 +21,8 @@ export default class ZoneMasksManager {
     this.showBorders = showBorders;
     this.borderColor = borderColor;
     this.borderWidth = borderWidth;
+
+    this.enableClickDebug = enableClickDebug;
 
     this.svg = null;
   }
@@ -32,13 +36,11 @@ export default class ZoneMasksManager {
 
     const res = await fetch(this.regionsJsonUrl, { cache: "no-store" });
     if (!res.ok) {
-      return console.warn(
-        "ZoneMasksManager: failed to fetch regions.json",
-        res.status
-      );
+      return console.warn("ZoneMasksManager: failed to fetch regions.json", res.status);
     }
 
     const data = await res.json();
+
     const W = data.width;
     const H = data.height;
     const zones = data.zones || [];
@@ -63,20 +65,30 @@ export default class ZoneMasksManager {
       path.setAttribute("id", `zone-${z.id}`);
       path.dataset.zoneId = String(z.id);
 
-      // fill الافتراضي (شفاف أو خفيف حسب ما بدك)
       path.setAttribute("fill", this.fill);
 
       if (this.showBorders) {
         path.setAttribute("stroke", this.borderColor);
         path.setAttribute("stroke-width", String(this.borderWidth));
         path.setAttribute("vector-effect", "non-scaling-stroke");
-      } else {
-        path.removeAttribute("stroke");
-        path.removeAttribute("stroke-width");
+      }
+
+      // ✅ Debug: click prints which zone id you clicked
+      if (this.enableClickDebug) {
+        path.style.cursor = "pointer";
+        path.addEventListener("click", () => {
+          console.log("Clicked zone id =", z.id);
+        });
       }
 
       gPaths.appendChild(path);
     });
+
+    // Info log (shows [1..5])
+    try {
+      const zoneInfo = zones.map((z) => ({ id: z.id, name: z.name || null }));
+      console.log("ZoneMasksManager: loaded zones:", zoneInfo);
+    } catch {}
 
     svg.appendChild(gPaths);
 

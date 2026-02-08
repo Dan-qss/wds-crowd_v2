@@ -39,6 +39,7 @@ class WebSocketStreamer:
         self.camera_ids = camera_ids
         self.connections = set()
         self.connections_lock = Lock()
+        
         self.frame_queues = {
             cam_id: Queue(maxsize=1) for cam_id in camera_ids
         }
@@ -57,6 +58,16 @@ class WebSocketStreamer:
         self.quality = 95
         self.max_frame_age = 5.0  # seconds
         
+        self.CAMERA_TO_ZONE = {
+                "1": "10",   # Greyshark
+                "2": "7",    # 911
+                "3": "6",    # Control Center
+                "4": "8",    # Drones
+                "5": "9",    # Barista Robot
+                "10": "11",  # ie-face
+                "11": "12",  # ie-face2
+            }
+
         # Always enable debug mode for now
         self.debug = True
         print(f"WebSocketStreamer initialized with camera IDs: {camera_ids}")
@@ -224,9 +235,24 @@ class WebSocketStreamer:
                                     "crowding_level": "Low"
                                 }
                             
+                            # message = json.dumps({
+                            #     'type': 'frame',
+                            #     'camera_id': camera_id,
+                            #     'frame': frame_base64,
+                            #     'compressed': True,
+                            #     'status': self.crowding_status[camera_id],
+                            #     'resolution': {
+                            #         'width': new_width,
+                            #         'height': new_height
+                            #     }
+                            # })
+
+                            zone_id = self.CAMERA_TO_ZONE.get(str(camera_id))
+
                             message = json.dumps({
                                 'type': 'frame',
                                 'camera_id': camera_id,
+                                # 'zone_id': zone_id,  # ✅ NEW
                                 'frame': frame_base64,
                                 'compressed': True,
                                 'status': self.crowding_status[camera_id],
@@ -235,6 +261,7 @@ class WebSocketStreamer:
                                     'height': new_height
                                 }
                             })
+
 
                             await self.broadcast_message(message)
                     except Exception as e:
