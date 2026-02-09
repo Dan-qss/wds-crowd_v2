@@ -283,6 +283,66 @@ async def generate_report(
         raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
 
 
+# ---------------- Arrivals-from-counts estimation endpoints (no tracking) ----------------
+@app.get("/visits/daily_estimate")
+async def visits_daily_estimate(
+    date: str = Query(..., description="Day (YYYY-MM-DD)"),
+    camera_id: Optional[int] = Query(None),
+    zone_name: Optional[str] = Query(None),
+    area_name: Optional[str] = Query(None),
+    min_up_delta: int = Query(1, ge=1, le=10, description="Minimum positive delta to count an arrival"),
+    max_step: int = Query(8, ge=1, le=50, description="Clip spike per tick"),
+    smooth: bool = Query(False, description="Apply light EMA smoothing before diff")
+):
+    """
+    Estimate unique arrivals during a day using only number_of_people time-series.
+    - Provide either camera_id OR zone_name/area_name to scope the estimate (or leave all None for all cameras).
+    """
+    try:
+        result = crowd_fetcher.estimate_daily_visits(
+            date_str=date,
+            camera_id=camera_id,
+            zone_name=zone_name,
+            area_name=area_name,
+            min_up_delta=min_up_delta,
+            max_step=max_step,
+            smooth=smooth
+        )
+        return JSONResponse(content=result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/visits/range_estimate")
+async def visits_range_estimate(
+    start_time: str = Query(..., description="Start (YYYY-MM-DD HH:MM:SS)"),
+    end_time: str = Query(..., description="End (YYYY-MM-DD HH:MM:SS)"),
+    camera_id: Optional[int] = Query(None),
+    zone_name: Optional[str] = Query(None),
+    area_name: Optional[str] = Query(None),
+    min_up_delta: int = Query(1, ge=1, le=10),
+    max_step: int = Query(8, ge=1, le=50),
+    smooth: bool = Query(False)
+):
+    """
+    Estimate unique arrivals within a time range using only number_of_people time-series.
+    """
+    try:
+        result = crowd_fetcher.estimate_visits_in_range(
+            start_time=start_time,
+            end_time=end_time,
+            camera_id=camera_id,
+            zone_name=zone_name,
+            area_name=area_name,
+            min_up_delta=min_up_delta,
+            max_step=max_step,
+            smooth=smooth
+        )
+        return JSONResponse(content=result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8010)
     

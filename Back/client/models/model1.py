@@ -78,7 +78,9 @@ class Model1:
 
     def _get_current_minute(self):
         try:
-            return datetime.now().strftime('%Y-%m-%d %H:%M')
+            # Use a 3-second time bucket instead of a per-minute key
+            # This returns a stable bucket identifier that changes every 3 seconds
+            return str(int(time.time() // 3))
         except Exception as e:
             logger.error(f"Error getting current minute: {e}")
             return None
@@ -88,7 +90,16 @@ class Model1:
             with torch.inference_mode():
                 roi_np = self.roi_cache.get(camera_id)
                 
-                results = self.model(frame, conf=0.30, verbose=False, classes=[0], device=0)
+                results = self.model(
+                    frame,
+                    imgsz=960,      # higher resolution for better small-object recall
+                    conf=0.25,      # slightly lower to catch smaller persons
+                    iou=0.55,       # NMS IOU tuned for crowded scenes
+                    verbose=False,
+                    classes=[0],
+                    device=0,
+                    augment=False    # set True for TTA if you can afford the latency
+                )
                 
                 current_count = 0
                 boxes = results[0].boxes

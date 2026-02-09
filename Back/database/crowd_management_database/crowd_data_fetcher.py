@@ -14,6 +14,309 @@ class CrowdDataFetcher:
     def __init__(self):
         self.db = DatabaseConnector.get_instance()
     
+    # -------- Arrivals-from-counts estimation (no tracking, no new tables) --------
+    def _fetch_counts_series(
+        self,
+        start_time: str,
+        end_time: str,
+        camera_id: Optional[int] = None,
+        zone_name: Optional[str] = None,
+        area_name: Optional[str] = None
+    ) -> List[Tuple[datetime, int]]:
+        """
+        Fetch ordered time series (measured_at, SUM(number_of_people)) from crowd_measurements.
+        - If camera_id is provided → returns that camera's time series.
+        - Else (all cameras/zone/area) → returns an aggregated-by-timestamp series.
+        """
+        conn = None
+        try:
+            conn = self.db.get_connection()
+            with conn.cursor() as cur:
+                params: List[Any] = [start_time, end_time]
+                filters = []
+                if camera_id is not None:
+                    filters.append("camera_id = %s")
+                    params.append(camera_id)
+                if zone_name is not None:
+                    filters.append("zone_name = %s")
+                    params.append(zone_name)
+                if area_name is not None:
+                    filters.append("area_name = %s")
+                    params.append(area_name)
+
+                where_extra = f" AND {' AND '.join(filters)}" if filters else ""
+
+                if camera_id is not None:
+                    # Single camera raw series
+                    query = f"""
+                        SELECT measured_at, number_of_people
+                        FROM crowd_measurements
+                        WHERE measured_at BETWEEN %s::timestamp AND %s::timestamp
+                        {where_extra}
+                        ORDER BY measured_at ASC
+                    """
+                else:
+                    # Aggregate across cameras into per-timestamp sums
+                    query = f"""
+                        SELECT measured_at, SUM(number_of_people) AS total_people
+                        FROM crowd_measurements
+                        WHERE measured_at BETWEEN %s::timestamp AND %s::timestamp
+                        {where_extra}
+                        GROUP BY measured_at
+                        ORDER BY measured_at ASC
+                    """
+                cur.execute(query, tuple(params))
+                rows = cur.fetchall()
+                return [(row[0], int(row[1] or 0)) for row in rows]
+        finally:
+            if conn:
+                self.db.return_connection(conn)
+
+    def _fetch_counts_series_by_camera(
+        self,
+        start_time: str,
+        end_time: str,
+        zone_name: Optional[str] = None,
+        area_name: Optional[str] = None
+    ) -> Dict[int, List[Tuple[datetime, int]]]:
+        """
+        Fetch per-camera ordered time series as a dict: camera_id -> [(measured_at, number_of_people), ...]
+        """
+        conn = None
+        try:
+            conn = self.db.get_connection()
+            with conn.cursor() as cur:
+                params: List[Any] = [start_time, end_time]
+                filters = []
+                if zone_name is not None:
+                    filters.append("zone_name = %s")
+                    params.append(zone_name)
+                if area_name is not None:
+                    filters.append("area_name = %s")
+                    params.append(area_name)
+                where_extra = f" AND {' AND '.join(filters)}" if filters else ""
+                query = f"""
+                    SELECT camera_id, measured_at, number_of_people
+                    FROM crowd_measurements
+                    WHERE measured_at BETWEEN %s::timestamp AND %s::timestamp
+                    {where_extra}
+                    ORDER BY camera_id ASC, measured_at ASC
+                """
+                cur.execute(query, tuple(params))
+                rows = cur.fetchall()
+                series_by_cam: Dict[int, List[Tuple[datetime, int]]] = {}
+                for cam_id, ts, ppl in rows:
+                    cam_id_int = int(cam_id)
+                    series_by_cam.setdefault(cam_id_int, []).append((ts, int(ppl or 0)))
+                return series_by_cam
+        finally:
+            if conn:
+                self.db.return_connection(conn)
+
+    def _downsample_series(
+        self,
+        series: List[Tuple[datetime, int]],
+        bucket_seconds: int = 60,
+        method: str = "mean"
+    ) -> List[Tuple[datetime, int]]:
+        """
+        Downsample time series into fixed-size buckets to reduce jitter.
+        Uses mean or median per bucket. Returns list sorted by bucket time.
+        """
+        if not series:
+            return []
+        import math
+        buckets: Dict[int, List[int]] = {}
+        for ts, val in series:
+            epoch = int(ts.timestamp())
+            bucket = (epoch // bucket_seconds) * bucket_seconds
+            buckets.setdefault(bucket, []).append(int(val or 0))
+        out: List[Tuple[datetime, int]] = []
+        for bucket_epoch in sorted(buckets.keys()):
+            vals = buckets[bucket_epoch]
+            if not vals:
+                continue
+            if method == "median":
+                s = sorted(vals)
+                m = s[len(s) // 2]
+                out.append((datetime.fromtimestamp(bucket_epoch), int(m)))
+            else:
+                avg = sum(vals) / len(vals)
+                out.append((datetime.fromtimestamp(bucket_epoch), int(round(avg))))
+        return out
+
+    def _estimate_arrivals_from_counts(
+        self,
+        series: List[Tuple[datetime, int]],
+        min_up_delta: int = 1,
+        max_step: int = 8,
+        smooth: bool = False
+    ) -> int:
+        """
+        Estimate unique arrivals from aggregated counts by summing positive deltas.
+        - min_up_delta: ignore tiny +1 noise if needed (set 1 to count any rise)
+        - max_step: clip unrealistic spikes per tick
+        - smooth: optional simple EMA smoothing before diff
+        """
+        if not series:
+            return 0
+        values = [c for _, c in series]
+        if smooth and len(values) > 2:
+            ema: List[float] = []
+            alpha = 0.3
+            for v in values:
+                if not ema:
+                    ema.append(float(v))
+                else:
+                    ema.append(alpha * float(v) + (1 - alpha) * ema[-1])
+            prev = int(round(ema[0]))
+            arrivals = 0
+            for v in ema[1:]:
+                curr = int(round(v))
+                delta = curr - prev
+                if delta >= min_up_delta:
+                    arrivals += min(delta, max_step)
+                prev = curr
+            return arrivals
+        else:
+            prev = values[0]
+            arrivals = 0
+            for curr in values[1:]:
+                delta = curr - prev
+                if delta >= min_up_delta:
+                    arrivals += min(delta, max_step)
+                prev = curr
+            return arrivals
+
+    def estimate_daily_visits(
+        self,
+        date_str: str,
+        camera_id: Optional[int] = None,
+        zone_name: Optional[str] = None,
+        area_name: Optional[str] = None,
+        min_up_delta: int = 2,
+        max_step: int = 3,
+        smooth: bool = True,
+        bucket_seconds: int = 60
+    ) -> Dict[str, Any]:
+        """
+        Estimate unique 'visits' (arrivals) during a day using only the counts time-series.
+        Does not require tracking or new tables.
+        """
+        start_time = f"{date_str} 00:00:00"
+        end_time = f"{date_str} 23:59:59"
+        if camera_id is not None:
+            # Single camera path
+            series = self._fetch_counts_series(
+                start_time=start_time,
+                end_time=end_time,
+                camera_id=camera_id,
+                zone_name=zone_name,
+                area_name=area_name
+            )
+            series = self._downsample_series(series, bucket_seconds=bucket_seconds, method="mean")
+            visits = self._estimate_arrivals_from_counts(
+                series,
+                min_up_delta=min_up_delta,
+                max_step=max_step,
+                smooth=smooth
+            )
+            series_points = len(series)
+        else:
+            # Sum per-camera estimated arrivals to avoid cross-camera interleaving artifacts
+            per_cam = self._fetch_counts_series_by_camera(
+                start_time=start_time,
+                end_time=end_time,
+                zone_name=zone_name,
+                area_name=area_name
+            )
+            total = 0
+            series_points = 0
+            for _, ser in per_cam.items():
+                ds = self._downsample_series(ser, bucket_seconds=bucket_seconds, method="mean")
+                total += self._estimate_arrivals_from_counts(
+                    ds,
+                    min_up_delta=min_up_delta,
+                    max_step=max_step,
+                    smooth=smooth
+                )
+                series_points += len(ds)
+            visits = total
+        scope = {
+            "date": date_str,
+            "camera_id": camera_id,
+            "zone_name": zone_name,
+            "area_name": area_name
+        }
+        return {
+            "scope": scope,
+            "series_points": series_points,
+            "estimated_visits": visits
+        }
+
+    def estimate_visits_in_range(
+        self,
+        start_time: str,
+        end_time: str,
+        camera_id: Optional[int] = None,
+        zone_name: Optional[str] = None,
+        area_name: Optional[str] = None,
+        min_up_delta: int = 2,
+        max_step: int = 3,
+        smooth: bool = True,
+        bucket_seconds: int = 60
+    ) -> Dict[str, Any]:
+        """
+        Estimate unique 'visits' (arrivals) within a time range using only the counts time-series.
+        """
+        if camera_id is not None:
+            series = self._fetch_counts_series(
+                start_time=start_time,
+                end_time=end_time,
+                camera_id=camera_id,
+                zone_name=zone_name,
+                area_name=area_name
+            )
+            series = self._downsample_series(series, bucket_seconds=bucket_seconds, method="mean")
+            visits = self._estimate_arrivals_from_counts(
+                series,
+                min_up_delta=min_up_delta,
+                max_step=max_step,
+                smooth=smooth
+            )
+            series_points = len(series)
+        else:
+            per_cam = self._fetch_counts_series_by_camera(
+                start_time=start_time,
+                end_time=end_time,
+                zone_name=zone_name,
+                area_name=area_name
+            )
+            total = 0
+            series_points = 0
+            for _, ser in per_cam.items():
+                ds = self._downsample_series(ser, bucket_seconds=bucket_seconds, method="mean")
+                total += self._estimate_arrivals_from_counts(
+                    ds,
+                    min_up_delta=min_up_delta,
+                    max_step=max_step,
+                    smooth=smooth
+                )
+                series_points += len(ds)
+            visits = total
+        scope = {
+            "start_time": start_time,
+            "end_time": end_time,
+            "camera_id": camera_id,
+            "zone_name": zone_name,
+            "area_name": area_name
+        }
+        return {
+            "scope": scope,
+            "series_points": series_points,
+            "estimated_visits": visits
+        }
+    
     def get_all_zones(self) -> List[str]:
         """Fetch all unique zone names from the database"""
         conn = None
@@ -939,10 +1242,26 @@ class CrowdDataFetcher:
         daily_statistics = []
         zone_analysis = []
         camera_analysis = []
+        total_estimated_visits = 0
         
         for day in days:
             daily_summary = self.get_daily_summary(day)
             hourly_breakdown = self.get_hourly_breakdown_for_date(day)
+            # Estimated visits from counts (all cameras/zones)
+            try:
+                visits_est = self.estimate_daily_visits(
+                    date_str=day,
+                    camera_id=None,
+                    zone_name=None,
+                    area_name=None,
+                    min_up_delta=1,
+                    max_step=8,
+                    smooth=False
+                )
+                estimated_visits = int(visits_est.get("estimated_visits", 0) or 0)
+            except Exception:
+                estimated_visits = 0
+            total_estimated_visits += estimated_visits
             
             peak_period = None
             if hourly_breakdown:
@@ -959,7 +1278,10 @@ class CrowdDataFetcher:
                 'total_measurements': daily_summary['total_measurements'],
                 'hourly_breakdown': hourly_breakdown,
                 'peak_periods': [peak_period] if peak_period else [],
-                'summary': daily_summary
+                'summary': {
+                    **daily_summary,
+                    'estimated_visits': estimated_visits
+                }
             })
         
         for zone in zones:
@@ -1018,7 +1340,10 @@ class CrowdDataFetcher:
             'total_capacity': first_day_summary.get('total_capacity', 0),
             'overall_occupancy_percentage': first_day_summary.get('overall_occupancy_percentage', 0),
             'most_crowded_zone': most_crowded_zone,
-            'least_crowded_zone': least_crowded_zone
+            'least_crowded_zone': least_crowded_zone,
+            # Estimated visits (if daily: for that day; if multi-day: sum)
+            'estimated_visits': (daily_statistics[0]['summary']['estimated_visits'] if report_type == "daily" and daily_statistics else total_estimated_visits),
+            'estimated_visits_total_range': total_estimated_visits
         }
         
         comparative_analysis = None

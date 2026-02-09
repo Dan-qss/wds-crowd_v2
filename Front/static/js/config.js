@@ -10,7 +10,7 @@ export const CONFIG = {
   },
 
    CAMERA_NAMES: {
-    "1": "Fixar aircraft",
+    "1": "Control Center",
     "2": "911",
     "3": "Drones",
     "4": "Barista Robot",

@@ -167,10 +167,12 @@ class PDFReportGenerator:
         total_people = summary.get('total_people_today', 0)
         total_capacity = summary.get('total_capacity', 0)
         overall_occupancy = summary.get('overall_occupancy_percentage', 0)
+        estimated_visits = summary.get('estimated_visits', 0)
         
         summary_data.append(['Total People Count:', f"{total_people:,}"])
         summary_data.append(['Total Capacity:', f"{total_capacity:,}"])
         summary_data.append(['Overall Occupancy:', f"{overall_occupancy:.1f}%"])
+        summary_data.append(['Estimated Visits (arrivals):', f"{int(estimated_visits):,}"])
         
         peak_hour = summary.get('peak_hour')
         if peak_hour:
@@ -218,6 +220,7 @@ class PDFReportGenerator:
             summary_row = [
                 ['Metric', 'Value'],
                 ['Total People', f"{summary.get('total_people', 0):,}"],
+                ['Estimated Visits (arrivals)', f"{int(summary.get('estimated_visits', 0) or 0):,}"],
                 ['Average Occupancy %', f"{summary.get('avg_percentage', 0):.2f}%"],
                 ['Max People (All Areas)', f"{summary.get('max_people', 0)}"],
                 ['Max Occupancy %', f"{summary.get('max_percentage', 0):.2f}%"],
