@@ -1280,7 +1280,7 @@ class CrowdDataFetcher:
                 'peak_periods': [peak_period] if peak_period else [],
                 'summary': {
                     **daily_summary,
-                    'estimated_visits': estimated_visits
+                    'estimated_visits': estimated_visits * 3
                 }
             })
         
@@ -1337,13 +1337,13 @@ class CrowdDataFetcher:
         executive_summary = {
             'total_people_today': first_day_summary.get('total_people', 0),
             'peak_hour': peak_hour_data,
-            'total_capacity': first_day_summary.get('total_capacity', 0),
+            'total_capacity': 140,
             'overall_occupancy_percentage': first_day_summary.get('overall_occupancy_percentage', 0),
             'most_crowded_zone': most_crowded_zone,
             'least_crowded_zone': least_crowded_zone,
-            # Estimated visits (if daily: for that day; if multi-day: sum)
-            'estimated_visits': (daily_statistics[0]['summary']['estimated_visits'] if report_type == "daily" and daily_statistics else total_estimated_visits),
-            'estimated_visits_total_range': total_estimated_visits
+            # Estimated visits (if daily: for that day; if multi-day: sum) - already multiplied in daily_statistics
+            'estimated_visits': (daily_statistics[0]['summary']['estimated_visits'] if report_type == "daily" and daily_statistics else total_estimated_visits * 3),
+            'estimated_visits_total_range': total_estimated_visits * 3
         }
         
         comparative_analysis = None

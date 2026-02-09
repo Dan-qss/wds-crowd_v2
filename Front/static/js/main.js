@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "2": "5", // camera 2 -> 911
     "3": "2", // camera 3 -> Drones
     "4": "1", // camera 4 -> Barista Robot
-    "5": "2", // camera 5 -> Greyshark mask
+    "5": "3", // camera 5 -> Greyshark mask
   };
 
   // =========================

@@ -166,12 +166,9 @@ class PDFReportGenerator:
         
         total_people = summary.get('total_people_today', 0)
         total_capacity = summary.get('total_capacity', 0)
-        overall_occupancy = summary.get('overall_occupancy_percentage', 0)
         estimated_visits = summary.get('estimated_visits', 0)
         
-        summary_data.append(['Total People Count:', f"{total_people:,}"])
         summary_data.append(['Total Capacity:', f"{total_capacity:,}"])
-        summary_data.append(['Overall Occupancy:', f"{overall_occupancy:.1f}%"])
         summary_data.append(['Estimated Visits (arrivals):', f"{int(estimated_visits):,}"])
         
         peak_hour = summary.get('peak_hour')
@@ -219,11 +216,8 @@ class PDFReportGenerator:
             
             summary_row = [
                 ['Metric', 'Value'],
-                ['Total People', f"{summary.get('total_people', 0):,}"],
                 ['Estimated Visits (arrivals)', f"{int(summary.get('estimated_visits', 0) or 0):,}"],
-                ['Average Occupancy %', f"{summary.get('avg_percentage', 0):.2f}%"],
                 ['Max People (All Areas)', f"{summary.get('max_people', 0)}"],
-                ['Max Occupancy %', f"{summary.get('max_percentage', 0):.2f}%"],
             ]
             
             summary_table = Table(summary_row, colWidths=[3*inch, 3*inch])
@@ -246,11 +240,10 @@ class PDFReportGenerator:
             if hourly_breakdown:
                 story.append(Paragraph("Hourly Breakdown", self.styles['SubsectionHeader']))
                 
-                hourly_data = [['Hour', 'Total People', 'Avg %', 'Max People (All Areas)']]
+                hourly_data = [['Hour', 'Avg %', 'Max People (All Areas)']]
                 for hour_data in hourly_breakdown[:14]:
                     hourly_data.append([
                         hour_data.get('hour_label', ''),
-                        str(hour_data.get('total_people', 0)),
                         f"{hour_data.get('avg_percentage', 0):.2f}%",
                         str(hour_data.get('max_people', 0))
                     ])
@@ -292,10 +285,10 @@ class PDFReportGenerator:
             zone_data = [
                 ['Metric', 'Value'],
                 ['Total Cameras', str(zone.get('total_cameras', 0))],
-                ['Total Capacity', f"{zone.get('total_capacity', 0):,}"],
-                ['Max People', max_people_display],
-                ['Average Occupancy %', f"{zone.get('avg_percentage', 0):.2f}%"],
-                ['Max Occupancy %', f"{zone.get('max_percentage', 0):.2f}%"],
+                ['Maximum Capacity', f"{zone.get('total_capacity', 0):,}"],
+                ['Peak Visitors', max_people_display],
+                ['Average Usage', f"{zone.get('avg_percentage', 0):.2f}%"],
+                ['Peak Usage', f"{zone.get('max_percentage', 0):.2f}%"],
             ]
             
             zone_table = Table(zone_data, colWidths=[3*inch, 3*inch])
@@ -354,18 +347,16 @@ class PDFReportGenerator:
         story.append(Paragraph("Camera Analysis", self.styles['SectionHeader']))
         
         if cameras:
-            cam_summary_data = [['Camera Name', 'Zone', 'Capacity', 'Avg %', 'Max People', 'Peak Hour']]
+            cam_summary_data = [['Zone', 'Capacity', 'Avg %', 'Peak Hour']]
             for cam in cameras:
                 cam_summary_data.append([
-                    cam.get('camera_name', ''),
                     cam.get('zone_name', '').replace('_', ' ').title(),
                     str(cam.get('capacity', 0)),
                     f"{cam.get('avg_percentage', 0):.2f}%",
-                    str(cam.get('max_people', 0)),
                     f"{cam.get('peak_hour', 'N/A')}:00" if cam.get('peak_hour') is not None else 'N/A'
                 ])
             
-            cam_summary_table = Table(cam_summary_data, colWidths=[2*inch, 1.5*inch, 1*inch, 1*inch, 1*inch, 1*inch])
+            cam_summary_table = Table(cam_summary_data, colWidths=[1.5*inch, 1*inch, 1*inch, 1*inch])
             cam_summary_table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#29624F')),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
@@ -381,8 +372,8 @@ class PDFReportGenerator:
             story.append(Spacer(1, 0.3*inch))
             
             for cam in cameras[:5]:
-                cam_name = cam.get('camera_name', '')
-                story.append(Paragraph(f"{cam_name}", self.styles['SubsectionHeader']))
+                zone_name = cam.get('zone_name', '').replace('_', ' ').title()
+                story.append(Paragraph(f"Zone: {zone_name}", self.styles['SubsectionHeader']))
                 
                 cam_stats = [
                     ['Metric', 'Value'],
@@ -390,15 +381,11 @@ class PDFReportGenerator:
                     ['Area', cam.get('area_name', '')],
                     ['Capacity', str(cam.get('capacity', 0))],
                     ['Max People', str(cam.get('max_people', 0))],
-                    ['Average Occupancy %', f"{cam.get('avg_percentage', 0):.2f}%"],
-                    ['Max Occupancy %', f"{cam.get('max_percentage', 0):.2f}%"],
                 ]
                 
                 crowding_dist = cam.get('crowding_level_distribution', {})
                 if crowding_dist:
-                    cam_stats.append(['Low Level Count', str(crowding_dist.get('Low', 0))])
-                    cam_stats.append(['Moderate Level Count', str(crowding_dist.get('Moderate', 0))])
-                    cam_stats.append(['Crowded Level Count', str(crowding_dist.get('Crowded', 0))])
+                    cam_stats.append(['Time at High Crowd', str(crowding_dist.get('Crowded', 0))])
                 
                 cam_table = Table(cam_stats, colWidths=[2.5*inch, 3.5*inch])
                 cam_table.setStyle(TableStyle([
@@ -426,12 +413,11 @@ class PDFReportGenerator:
         
         day_comparison = comp_analysis.get('day_comparison', [])
         if day_comparison:
-            comp_data = [['Date', 'Total People', 'Avg Occupancy %', 'Peak Hour']]
+            comp_data = [['Date', 'Avg Occupancy %', 'Peak Hour']]
             for day in day_comparison:
                 peak_hour = f"{day.get('peak_hour', 'N/A')}:00" if day.get('peak_hour') is not None else 'N/A'
                 comp_data.append([
                     day.get('date', ''),
-                    f"{day.get('total_people', 0):,}",
                     f"{day.get('avg_percentage', 0):.2f}%",
                     peak_hour
                 ])

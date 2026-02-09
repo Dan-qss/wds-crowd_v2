@@ -81,8 +81,8 @@ def draw_roi_on_frame(frame, roi):
 load_rois()
 
 # top-left, top-right, bottom-right, bottom-left
-set_roi("1", [[2764, 432], [9, 1756], [57, 2131], [566, 2121], [912, 2121], [2496, 2073], [3772, 2121]]) # Set the ROI for software
+set_roi("1", [[38, 1488], [2592, 307], [3494, 1113], [3254, 2131], [9, 2131]]) # Set the ROI for software
 set_roi("2", [[412, 2140], [1132, 796], [1612, 38], [2208, 0], [3350, 902], [3792, 2102]]) # Set the ROI for lab 1 
 set_roi("3", [[19, 2112], [307, 1171], [1286, 48], [1737, 48], [2630, 998], [3292, 1574], [3427, 2112]]) # Set the ROI for lab 2
-set_roi("4", [[3820, 739], [144, 729], [28, 1545], [9, 2092], [3734, 2121], [3811, 2150]]) # Set the ROI for showroom
-set_roi("5", [[1737, 0], [3494, 2131], [854, 2131], [67, 1142], [585, 691], [1104, 0]]) # Set the ROI for marketing-&-Sales
+set_roi("4", [[28, 2121], [259, 576], [3792, 768], [3820, 1305], [3004, 2140]]) # Set the ROI for showroom
+set_roi("5", [[1008, 0], [1824, 19], [3475, 2150], [1104, 2140], [19, 1219], [57, 384]]) # Set the ROI for marketing-&-Sales
