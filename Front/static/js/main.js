@@ -36,11 +36,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // اربطي كل كاميرا بالماسك الصحيح (من 1..5)
   // 🔧 عدّلي الأرقام حسب ضغطك على الخريطة (zone click debug)
   const CAMERA_TO_MASK = {
-    "1": "4", // camera 1 -> Control Center 
+    "1": "3", // camera 1 -> Greyshark 
     "2": "5", // camera 2 -> 911
-    "3": "2", // camera 3 -> Drones
-    "4": "3", // camera 4 -> Barista Robot
-    "5": "1", // camera 5 -> Greyshark mask
+    "3": "4", // camera 3 -> Control Center 
+    "4": "2", // camera 4 -> Drones
+    "5": "1", // camera 5 ->  Barista Robot 
   };
 
   // =========================
