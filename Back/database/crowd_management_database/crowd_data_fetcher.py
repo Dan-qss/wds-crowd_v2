@@ -1004,6 +1004,21 @@ class CrowdDataFetcher:
                     
                     peak_hour_data = self.get_camera_peak_hour(camera_id, date_str)
                     
+                    # Calculate estimated visits for this zone/camera
+                    try:
+                        visits_est = self.estimate_daily_visits(
+                            date_str=date_str,
+                            camera_id=camera_id,
+                            zone_name=None,
+                            area_name=None,
+                            min_up_delta=1,
+                            max_step=8,
+                            smooth=False
+                        )
+                        estimated_visits = int(visits_est.get("estimated_visits", 0) or 0) * 3
+                    except Exception:
+                        estimated_visits = 0
+                    
                     return {
                         'camera_id': camera_id,
                         'zone_name': row[1],
@@ -1016,7 +1031,8 @@ class CrowdDataFetcher:
                         'max_percentage': round(float(row[8]) if row[8] else 0, 2),
                         'crowding_level_distribution': crowding_dist,
                         'peak_hour': peak_hour_data.get('peak_hour'),
-                        'hourly_data': peak_hour_data.get('hourly_data', [])
+                        'hourly_data': peak_hour_data.get('hourly_data', []),
+                        'estimated_visits': estimated_visits
                     }
                 return None
         except Exception as e:

@@ -349,12 +349,15 @@ class PDFReportGenerator:
         if cameras:
             cam_summary_data = [['Zone', 'Capacity', 'Avg %', 'Peak Hour']]
             for cam in cameras:
+                avg_pct = cam.get('avg_percentage', 0) * 2
+
                 cam_summary_data.append([
                     cam.get('zone_name', '').replace('_', ' ').title(),
                     str(cam.get('capacity', 0)),
-                    f"{cam.get('avg_percentage', 0):.2f}%",
+                    f"{avg_pct:.2f}%",
                     f"{cam.get('peak_hour', 'N/A')}:00" if cam.get('peak_hour') is not None else 'N/A'
                 ])
+
             
             cam_summary_table = Table(cam_summary_data, colWidths=[1.5*inch, 1*inch, 1*inch, 1*inch])
             cam_summary_table.setStyle(TableStyle([
